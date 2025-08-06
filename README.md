@@ -11,7 +11,7 @@ npm install tron-component
 Or use directly in the browser:
 
 ```html
-<script src="https://unpkg.com/tron-component/dist/tron-component.min.js"></script>
+<script src="https://unpkg.com/@nelsondev/component/dist/tron-component.min.js"></script>
 ```
 
 ## Quick Start
