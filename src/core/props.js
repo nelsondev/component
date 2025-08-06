@@ -4,26 +4,22 @@ function camelToKebab(str) {
 
 function convertValue(value, type) {
   if (value == null) return value;
- 
-  switch (type) {
-    case Boolean:
-      return value === 'true' || value === true;
-    case Number:
-      const num = Number(value);
-      return isNaN(num) ? 0 : num;
-    case Array:
-    case Object:
-      if (typeof value === 'string') {
-        try {
-          return JSON.parse(value);
-        } catch {
-          return type === Array ? [] : {};
-        }
-      }
-      return value;
-    default:
-      return String(value);
+  
+  if (type === Boolean) {
+    return value === '' || value === 'true' || value === true;
   }
+  if (type === Number) {
+    const num = +value; // Shorter than Number(value)
+    return isNaN(num) ? 0 : num;
+  }
+  if (type === Array || type === Object) {
+    if (typeof value === 'string') {
+      try { return JSON.parse(value); }
+      catch { return type === Array ? [] : {}; }
+    }
+    return value;
+  }
+  return String(value);
 }
 
 export function createProps(component, propList) {

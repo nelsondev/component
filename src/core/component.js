@@ -14,21 +14,21 @@ let isScheduled = false;
 
 function scheduleUpdate(component) {
   updateQueue.add(component);
- 
+
   if (!isScheduled) {
     isScheduled = true;
     requestAnimationFrame(() => {
       const components = [...updateQueue];
       updateQueue.clear();
       isScheduled = false;
-     
+
       // Process visible components first for better perceived performance
       components.sort((a, b) => {
         const aVisible = a._isVisible();
         const bVisible = b._isVisible();
         return bVisible - aVisible;
       });
-     
+
       components.forEach(comp => {
         if (comp.isConnected) {
           comp._render();
@@ -49,7 +49,7 @@ export function createComponent(tagName, definition) {
 
     constructor() {
       super();
-     
+
       // Initialize component state
       this._reactives = new Map();
       this._eventHandlers = new Set();
@@ -66,13 +66,13 @@ export function createComponent(tagName, definition) {
       this._processedSlotsCache = null;
       this._slotsVersion = 0;
       this._lastSlotContent = null;
-      
+
       // Create and call context
       const context = createContext(this);
-      
+
       // Apply plugins
       const enhancedContext = plugins.reduce((ctx, plugin) => plugin(ctx, this) || ctx, context);
-      
+
       definition.call(enhancedContext, enhancedContext);
     }
 
@@ -83,25 +83,23 @@ export function createComponent(tagName, definition) {
 
     disconnectedCallback() {
       this._eventListeners.forEach(({ element, type, handler }) => {
-        try {
-          element.removeEventListener(type, handler);
-        } catch {}
+        element.removeEventListener(type, handler);
       });
       this._eventListeners.clear();
-      
+
       this._eventHandlers.forEach(handlerName => {
         delete this[handlerName];
         delete window[handlerName];
       });
       this._eventHandlers.clear();
-      
+
       this._reactives.forEach((_, reactive) => {
         if (reactive && typeof reactive.dispose === 'function') {
           reactive.dispose();
         }
       });
       this._reactives.clear();
-      
+
       this.dispatchEvent(new CustomEvent('unmounted'));
     }
 
@@ -127,31 +125,27 @@ export function createComponent(tagName, definition) {
 
     _render() {
       if (!this._template) return;
-     
+
       this._updateScheduled = false;
       this.dispatchEvent(new CustomEvent('beforeUpdate'));
-      
-      try {
-        const html = typeof this._template === 'function'
-          ? this._template()
-          : String(this._template);
-          
-        if (html === this._lastHTML && !this._firstRender) return;
 
-        const processedHTML = this._processSlots(html);
-        updateDOM(this, processedHTML);
-        
-        this._lastHTML = html;
-        this._firstRender = false;
-        this.dispatchEvent(new CustomEvent('updated'));
-      } catch (error) {
-        console.error(`Error rendering ${tagName}:`, error);
-      }
+      const html = typeof this._template === 'function'
+        ? this._template()
+        : String(this._template);
+
+      if (html === this._lastHTML && !this._firstRender) return;
+
+      const processedHTML = this._processSlots(html);
+      updateDOM(this, processedHTML);
+
+      this._lastHTML = html;
+      this._firstRender = false;
+      this.dispatchEvent(new CustomEvent('updated'));
     }
 
     _processSlots(html) {
       const currentSlotContent = this.innerHTML;
-      
+
       if (this._firstRender && !this._originalContent) {
         this._originalContent = currentSlotContent;
         this._lastSlotContent = currentSlotContent;
@@ -192,41 +186,41 @@ export function createComponent(tagName, definition) {
     _extractNamedSlots() {
       const namedSlots = {};
       const currentContent = this._lastSlotContent || this._originalContent;
-      
+
       if (!currentContent) return namedSlots;
-      
+
       if (!currentContent.includes('slot=')) return namedSlots;
-      
+
       const tempDiv = document.createElement('div');
       tempDiv.innerHTML = currentContent;
-      
+
       tempDiv.querySelectorAll('[slot]').forEach(el => {
         const slotName = el.getAttribute('slot');
         namedSlots[slotName] = el.outerHTML;
       });
-      
+
       return namedSlots;
     }
 
     _getDefaultSlotContent() {
       const currentContent = this._lastSlotContent || this._originalContent;
       if (!currentContent) return '';
-      
+
       if (!currentContent.includes('slot=')) {
         return currentContent;
       }
-      
+
       const tempDiv = document.createElement('div');
       tempDiv.innerHTML = currentContent;
-      
+
       tempDiv.querySelectorAll('[slot]').forEach(el => el.remove());
-      
+
       return tempDiv.innerHTML;
     }
 
     _isVisible() {
       if (!this.isConnected) return true;
-      
+
       try {
         const rect = this.getBoundingClientRect();
         return rect.top < window.innerHeight && rect.bottom > 0;

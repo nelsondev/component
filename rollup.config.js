@@ -2,10 +2,9 @@ import { nodeResolve } from '@rollup/plugin-node-resolve';
 import terser from '@rollup/plugin-terser';
 
 const banner = `/*!
- * Tron Component v1.0.0
- * Ultra-simple reactive web component library
+ * Tron Component
  * (c) 2024 Nelson M
- * Released under the MIT License
+ * MIT
  */`;
 
 export default [
