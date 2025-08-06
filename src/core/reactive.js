@@ -3,9 +3,7 @@ import { signal, effect } from '@preact/signals-core';
 export function createReactive(component, initialValue) {
   const reactive = signal(initialValue);
  
-  // Add update trigger method for manual updates
   reactive.update = function() {
-    // Force signal update by reassigning
     this.value = this.value;
     return this;
   };
@@ -13,14 +11,14 @@ export function createReactive(component, initialValue) {
   reactive.valueOf = function() { return this.value; };
   reactive.toString = function() { return String(this.value); };
  
-  // Auto-update component when value changes
-  effect(() => {
-    reactive.value; // Subscribe to changes
+  const cleanup = effect(() => {
+    reactive.value;
     if (component.isConnected) {
       component._scheduleUpdate();
     }
   });
  
+  reactive.dispose = cleanup;
   component._reactives.set(reactive, true);
   return reactive;
 }
@@ -28,21 +26,18 @@ export function createReactive(component, initialValue) {
 export function createReactiveArray(component, initialValue) {
   const reactive = signal([...initialValue]);
  
-  // Add render method for templates
   reactive.render = function(template) {
     return this.value.map((item, index) =>
       typeof template === 'function' ? template(item, index) : template
     ).join('');
   };
  
-  // Override array methods to work with signals
   const arrayMethods = ['push', 'pop', 'shift', 'unshift', 'splice', 'sort', 'reverse'];
  
   arrayMethods.forEach(method => {
     reactive[method] = function(...args) {
-      const newArray = [...this.value];
-      const result = newArray[method](...args);
-      this.value = newArray;
+      const result = this.value[method](...args);
+      this.value = [...this.value];
       return result;
     };
   });
@@ -50,19 +45,18 @@ export function createReactiveArray(component, initialValue) {
   reactive.valueOf = function() { return this.value; };
   reactive.toString = function() { return JSON.stringify(this.value); };
  
-  // Auto-update component when array changes
-  effect(() => {
-    reactive.value; // Subscribe to changes
+  const cleanup = effect(() => {
+    reactive.value;
     if (component.isConnected) {
       component._scheduleUpdate();
     }
   });
  
+  reactive.dispose = cleanup;
   component._reactives.set(reactive, true);
   return reactive;
 }
 
-// Simple helper to determine what type of reactive to create
 export function createReactiveAny(component, value) {
   if (Array.isArray(value)) {
     return createReactiveArray(component, value);

@@ -77,6 +77,9 @@ export function createContext(component) {
      */
     render(template) {
       component._template = template;
+      if (component.isConnected) {
+        component._scheduleUpdate();
+      }
     },
 
     /**

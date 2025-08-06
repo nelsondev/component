@@ -64,6 +64,7 @@ export function createComponent(tagName, definition) {
       this._defaultSlotContent = '';
       this._processedSlotsCache = null;
       this._slotsVersion = 0;
+      this._lastSlotContent = null;
       
       // Create and call context
       const context = createContext(this);
@@ -76,29 +77,39 @@ export function createComponent(tagName, definition) {
     }
 
     disconnectedCallback() {
-      // Clean up event handlers
+      this._eventListeners.forEach(({ element, type, handler }) => {
+        try {
+          element.removeEventListener(type, handler);
+        } catch {}
+      });
+      this._eventListeners.clear();
+      
       this._eventHandlers.forEach(handlerName => {
         delete this[handlerName];
       });
       this._eventHandlers.clear();
       
-      // Clean up event listeners
-      this._eventListeners.forEach(({ element, type, handler }) => {
-        element.removeEventListener(type, handler);
+      this._reactives.forEach((_, reactive) => {
+        if (reactive && typeof reactive.dispose === 'function') {
+          reactive.dispose();
+        }
       });
-      this._eventListeners.clear();
-      
       this._reactives.clear();
+      
       this.dispatchEvent(new CustomEvent('unmounted'));
     }
 
     attributeChangedCallback(name, oldValue, newValue) {
-      if (oldValue !== newValue && this._props) {
+      if (oldValue !== newValue) {
         if (this._propsCache) {
-          this._propsCache.clear();
+          this._propsCache.delete(this._kebabToCamel(name));
         }
         this._scheduleUpdate();
       }
+    }
+
+    _kebabToCamel(str) {
+      return str.replace(/-([a-z])/g, (_, letter) => letter.toUpperCase());
     }
 
     _scheduleUpdate() {
@@ -133,12 +144,21 @@ export function createComponent(tagName, definition) {
     }
 
     _processSlots(html) {
+      const currentSlotContent = this.innerHTML;
+      
       if (this._firstRender && !this._originalContent) {
-        this._originalContent = this.innerHTML;
+        this._originalContent = currentSlotContent;
+        this._lastSlotContent = currentSlotContent;
         this._namedSlots = this._extractNamedSlots();
         this._hasSlots = html.includes('<slot');
         this._defaultSlotContent = this._getDefaultSlotContent();
         this._slotsVersion++;
+      } else if (currentSlotContent !== this._lastSlotContent) {
+        this._lastSlotContent = currentSlotContent;
+        this._namedSlots = this._extractNamedSlots();
+        this._defaultSlotContent = this._getDefaultSlotContent();
+        this._slotsVersion++;
+        this._processedSlotsCache = null;
       }
 
       if (!this._hasSlots) return html;
@@ -165,13 +185,14 @@ export function createComponent(tagName, definition) {
 
     _extractNamedSlots() {
       const namedSlots = {};
+      const currentContent = this._lastSlotContent || this._originalContent;
       
-      if (!this._originalContent) return namedSlots;
+      if (!currentContent) return namedSlots;
       
-      if (!this._originalContent.includes('slot=')) return namedSlots;
+      if (!currentContent.includes('slot=')) return namedSlots;
       
       const tempDiv = document.createElement('div');
-      tempDiv.innerHTML = this._originalContent;
+      tempDiv.innerHTML = currentContent;
       
       tempDiv.querySelectorAll('[slot]').forEach(el => {
         const slotName = el.getAttribute('slot');
@@ -182,14 +203,15 @@ export function createComponent(tagName, definition) {
     }
 
     _getDefaultSlotContent() {
-      if (!this._originalContent) return '';
+      const currentContent = this._lastSlotContent || this._originalContent;
+      if (!currentContent) return '';
       
-      if (!this._originalContent.includes('slot=')) {
-        return this._originalContent;
+      if (!currentContent.includes('slot=')) {
+        return currentContent;
       }
       
       const tempDiv = document.createElement('div');
-      tempDiv.innerHTML = this._originalContent;
+      tempDiv.innerHTML = currentContent;
       
       tempDiv.querySelectorAll('[slot]').forEach(el => el.remove());
       
@@ -197,13 +219,13 @@ export function createComponent(tagName, definition) {
     }
 
     _isVisible() {
-      if (!this.isConnected) return false;
+      if (!this.isConnected) return true;
       
       try {
         const rect = this.getBoundingClientRect();
         return rect.top < window.innerHeight && rect.bottom > 0;
       } catch {
-        return false;
+        return true;
       }
     }
 
