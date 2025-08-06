@@ -332,6 +332,8 @@ function createComponent(tagName, definition) {
       this._lastHTML = '';
       this._firstRender = true;
       this._updateScheduled = false;
+      this._originalContent = null; // Store original slot content
+      this._namedSlots = {}; // Store named slot content
       
       // Create and call context
       const context = createContext(this);
@@ -384,7 +386,9 @@ function createComponent(tagName, definition) {
           
         if (html === this._lastHTML && !this._firstRender) return;
 
-        updateDOM(this, html);
+        // Process slots in Light DOM
+        const processedHTML = this._processSlots(html);
+        updateDOM(this, processedHTML);
         
         this._lastHTML = html;
         this._firstRender = false;
@@ -392,6 +396,51 @@ function createComponent(tagName, definition) {
       } catch (error) {
         console.error(`Error rendering ${tagName}:`, error);
       }
+    }
+
+    _processSlots(html) {
+      // Capture original content before first render
+      if (this._firstRender && !this._originalContent) {
+        this._originalContent = this.innerHTML;
+        this._namedSlots = this._extractNamedSlots();
+      }
+
+      // Replace <slot> tags with actual content
+      return html.replace(/<slot(\s+name=["']([^"']+)["'])?[^>]*><\/slot>/g, (match, nameAttr, slotName) => {
+        if (slotName) {
+          // Named slot
+          return this._namedSlots[slotName] || '';
+        } else {
+          // Default slot - return all content not in named slots
+          return this._getDefaultSlotContent();
+        }
+      });
+    }
+
+    _extractNamedSlots() {
+      const namedSlots = {};
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = this._originalContent;
+      
+      // Find all elements with slot attribute
+      tempDiv.querySelectorAll('[slot]').forEach(el => {
+        const slotName = el.getAttribute('slot');
+        namedSlots[slotName] = el.outerHTML;
+      });
+      
+      return namedSlots;
+    }
+
+    _getDefaultSlotContent() {
+      if (!this._originalContent) return '';
+      
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = this._originalContent;
+      
+      // Remove named slot elements
+      tempDiv.querySelectorAll('[slot]').forEach(el => el.remove());
+      
+      return tempDiv.innerHTML;
     }
 
     _isVisible() {
