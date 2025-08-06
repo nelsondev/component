@@ -334,6 +334,8 @@ function createComponent(tagName, definition) {
       this._updateScheduled = false;
       this._originalContent = null; // Store original slot content
       this._namedSlots = {}; // Store named slot content
+      this._hasSlots = false; // Cache whether template has slots
+      this._defaultSlotContent = ''; // Cache default slot content
       
       // Create and call context
       const context = createContext(this);
@@ -398,27 +400,61 @@ function createComponent(tagName, definition) {
       }
     }
 
+    _render() {
+      if (!this._template) return;
+     
+      this._updateScheduled = false;
+      this.dispatchEvent(new CustomEvent('beforeUpdate'));
+      
+      try {
+        const html = typeof this._template === 'function'
+          ? this._template()
+          : String(this._template);
+          
+        if (html === this._lastHTML && !this._firstRender) return;
+
+        // Process slots in Light DOM (optimized)
+        const processedHTML = this._processSlots(html);
+        updateDOM(this, processedHTML);
+        
+        this._lastHTML = html;
+        this._firstRender = false;
+        this.dispatchEvent(new CustomEvent('updated'));
+      } catch (error) {
+        console.error(`Error rendering ${tagName}:`, error);
+      }
+    }
+
     _processSlots(html) {
       // Capture original content before first render
       if (this._firstRender && !this._originalContent) {
         this._originalContent = this.innerHTML;
         this._namedSlots = this._extractNamedSlots();
+        this._hasSlots = html.includes('<slot');
+        this._defaultSlotContent = this._getDefaultSlotContent();
       }
 
-      // Replace <slot> tags with actual content
+      // Early exit if no slots in template
+      if (!this._hasSlots) return html;
+
+      // Replace <slot> tags with actual content (cached)
       return html.replace(/<slot(\s+name=["']([^"']+)["'])?[^>]*><\/slot>/g, (match, nameAttr, slotName) => {
         if (slotName) {
-          // Named slot
           return this._namedSlots[slotName] || '';
         } else {
-          // Default slot - return all content not in named slots
-          return this._getDefaultSlotContent();
+          return this._defaultSlotContent;
         }
       });
     }
 
     _extractNamedSlots() {
       const namedSlots = {};
+      
+      if (!this._originalContent) return namedSlots;
+      
+      // Use faster parsing - only if we have slot attributes
+      if (!this._originalContent.includes('slot=')) return namedSlots;
+      
       const tempDiv = document.createElement('div');
       tempDiv.innerHTML = this._originalContent;
       
@@ -433,6 +469,11 @@ function createComponent(tagName, definition) {
 
     _getDefaultSlotContent() {
       if (!this._originalContent) return '';
+      
+      // Early exit if no named slots exist
+      if (!this._originalContent.includes('slot=')) {
+        return this._originalContent;
+      }
       
       const tempDiv = document.createElement('div');
       tempDiv.innerHTML = this._originalContent;
