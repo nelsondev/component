@@ -184,31 +184,33 @@
        */
       event(handler, methodName = null) {
         const name = methodName || `_evt${component._eventCounter++}`;
-       
+      
         component[name] = (...args) => handler(...args);
         
         component._eventHandlers.add(name);
-       
+      
         const eventWrapper = (...args) => {
           return component[name](...args);
         };
-       
+      
         eventWrapper.toString = () => {
           const handlerStr = handler.toString();
-          const hasParams = /^\s*\(\s*[^)]+\s*\)/.test(handlerStr);
-         
+          // Check if function has actual parameters (not just empty parentheses)
+          const paramMatch = handlerStr.match(/^\s*\(\s*([^)]*)\s*\)/);
+          const hasParams = paramMatch && paramMatch[1].trim().length > 0;
+        
           if (!hasParams) {
             return `this.${name}()`;
           }
-         
-          const hasMultipleParams = handlerStr.includes(',');
+        
+          const hasMultipleParams = paramMatch[1].includes(',');
           if (hasMultipleParams) {
             return `this.${name}(event)`;
           }
-         
+        
           return `(function(e){e.preventDefault();this.${name}(e)}).call(this,event)`;
         };
-       
+      
         eventWrapper.valueOf = eventWrapper.toString;
         return eventWrapper;
       },
