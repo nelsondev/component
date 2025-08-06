@@ -202,39 +202,6 @@ component('click-counter', ({ react, event, render }) => {
 });
 ```
 
-### Todo List
-
-```javascript
-component('todo-list', ({ react, event, render }) => {
-  const todos = react(['Buy groceries', 'Walk the dog']);
-  const input = react('');
-  
-  const addTodo = event(() => {
-    if (input.value.trim()) {
-      todos.push(input.value);
-      input.value = '';
-    }
-  });
-  
-  const updateInput = event((e) => {
-    input.value = e.target.value;
-  });
-  
-  render(() => `
-    <div>
-      <input 
-        value="${input.value}" 
-        oninput="${updateInput}" 
-        placeholder="Add todo">
-      <button onclick="${addTodo}">Add</button>
-      <ul>
-        ${todos.render(todo => `<li>${todo}</li>`)}
-      </ul>
-    </div>
-  `);
-});
-```
-
 ## TypeScript
 
 Full TypeScript support included:
