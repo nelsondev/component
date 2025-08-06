@@ -164,14 +164,15 @@ Reactive arrays have special methods:
 ```javascript
 const todos = react(['Buy milk', 'Walk dog']);
 
-// Array methods trigger updates automatically
+// Array methods need .update() to trigger re-render.
 todos.value.push('New item');
 todos.value.splice(0, 1);
+todos.update()
 
 // Render arrays in templates
 render(() => `
   <ul>
-    ${todos.map(item => `<li>${item}</li>`)}
+    ${todos.render(item => `<li>${item}</li>`)}
   </ul>
 `);
 ```
