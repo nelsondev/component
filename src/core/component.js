@@ -91,6 +91,7 @@ export function createComponent(tagName, definition) {
       
       this._eventHandlers.forEach(handlerName => {
         delete this[handlerName];
+        delete window[handlerName];
       });
       this._eventHandlers.clear();
       

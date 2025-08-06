@@ -184,20 +184,29 @@
        */
       event(handler, methodName = null) {
         const name = methodName || `_evt${component._eventCounter++}`;
-      
-        component[name] = (...args) => handler(...args);
         
+        component[name] = (...args) => handler(...args);
         component._eventHandlers.add(name);
-      
-        const eventWrapper = (...args) => {
-          return component[name](...args);
-        };
-      
+        
+        // Store component reference globally using the handler name
+        window[name] = component;
+        
+        const eventWrapper = (...args) => component[name](...args);
+        
         eventWrapper.toString = () => {
-          return `${name}()`;
+          const handlerStr = handler.toString();
+          const paramMatch = handlerStr.match(/^\s*(?:async\s+)?\(?([^)]*)\)?\s*=>/);
+          const params = paramMatch ? paramMatch[1].trim() : '';
+          
+          if (!params) {
+            return `window.${name}.${name}()`;
+          }
+          if (params.includes(',')) {
+            return `window.${name}.${name}(event)`;
+          }
+          return `(function(e){e.preventDefault();window.${name}.${name}(e)}).call(this,event)`;
         };
-      
-        eventWrapper.valueOf = eventWrapper.toString;
+        
         return eventWrapper;
       },
 
@@ -349,6 +358,7 @@
         
         this._eventHandlers.forEach(handlerName => {
           delete this[handlerName];
+          delete window[handlerName];
         });
         this._eventHandlers.clear();
         
