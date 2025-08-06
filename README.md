@@ -28,6 +28,11 @@ component('hello-world', ({ render }) => {
 <hello-world></hello-world>
 ```
 
+## Disclaimer
+I wrote this library extremely fast out of need of a simple component system for a very specific use-case. It's got some jank, and its written in an obtuse way. One specific known issue with my implementation is vanilla-components like <dialog> which modify the DOM *do* break the reactive system as they cause un-knowing DOM updates that I'm currently not intercepting.
+
+I'm working toward making this an extremely solid option for **ALL** use cases. Bare with me!
+
 ## API Reference
 
 ### `component(tagName, definition)`
@@ -265,11 +270,6 @@ component('click-counter', ({ react, event, render }) => {
   `);
 });
 ```
-
-## Disclaimer
-I wrote this library extremely fast out of need of a simple component system for a very specific use-case. It's got some jank, and its written in an obtuse way. One specific known issue with my implementation is vanilla-components like <dialog> which modify the DOM *do* break the reactive system as they cause un-knowing DOM updates that I'm currently not intercepting.
-
-I'm working toward making this an extremely solid option for **ALL** use cases. Bare with me!
 
 ## TypeScript
 
