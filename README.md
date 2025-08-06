@@ -160,13 +160,13 @@ Reactive arrays have special methods:
 const todos = react(['Buy milk', 'Walk dog']);
 
 // Array methods trigger updates automatically
-todos.push('New item');
-todos.splice(0, 1);
+todos.value.push('New item');
+todos.value.splice(0, 1);
 
 // Render arrays in templates
 render(() => `
   <ul>
-    ${todos.render(item => `<li>${item}</li>`)}
+    ${todos.map(item => `<li>${item}</li>`)}
   </ul>
 `);
 ```

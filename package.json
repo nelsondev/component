@@ -1,6 +1,6 @@
 {
   "name": "@nelsondev/component",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Ultra-simple reactive web component library with clean APIs and powerful features",
   "main": "dist/tron-component.js",
   "module": "dist/tron-component.esm.js",
