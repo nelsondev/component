@@ -1,19 +1,17 @@
 /**
- * Component Context - API methods available to components
+ * Component Context - Simplified API for better performance
  */
 
-import { createReactive, createReactiveArray } from './reactive.js';
+import { createReactiveAny } from './reactive.js';
 import { createProps } from './props.js';
 
 export function createContext(component) {
   return {
     /**
-     * Create reactive state
+     * Create reactive state (manual updates for objects)
      */
     react(value) {
-      return Array.isArray(value) 
-        ? createReactiveArray(component, value)
-        : createReactive(component, value);
+      return createReactiveAny(component, value);
     },
 
     /**
@@ -22,27 +20,42 @@ export function createContext(component) {
     element: component,
 
     /**
-     * Create event handlers
+     * Create event handlers that work both in templates and as direct function calls
      */
     event(handler, methodName = null) {
       const name = methodName || `_evt${component._eventCounter++}`;
       
+      // Store the actual function on the component
       component[name] = (...args) => handler(...args);
       
-      // Smart event binding based on handler signature
-      const handlerStr = handler.toString();
-      const hasParams = /^\s*\(\s*[^)]+\s*\)/.test(handlerStr);
+      // Create a smart wrapper that can be used both ways
+      const eventWrapper = (...args) => {
+        // If called directly, execute the handler
+        return component[name](...args);
+      };
       
-      if (!hasParams) {
-        return `this.getRootNode().host.${name}()`;
-      }
+      // Add template string generation
+      eventWrapper.toString = () => {
+        // Smart event binding based on handler signature
+        const handlerStr = handler.toString();
+        const hasParams = /^\s*\(\s*[^)]+\s*\)/.test(handlerStr);
+        
+        if (!hasParams) {
+          return `this.getRootNode().host.${name}()`;
+        }
+        
+        const hasMultipleParams = handlerStr.includes(',');
+        if (hasMultipleParams) {
+          return `this.getRootNode().host.${name}(event)`;
+        }
+        
+        return `(function(e){e.preventDefault();this.getRootNode().host.${name}(e)}).call(this,event)`;
+      };
       
-      const hasMultipleParams = handlerStr.includes(',');
-      if (hasMultipleParams) {
-        return `this.getRootNode().host.${name}(event)`;
-      }
+      // Make it work in template literals
+      eventWrapper.valueOf = eventWrapper.toString;
       
-      return `(function(e){e.preventDefault();this.getRootNode().host.${name}(e)}).call(this,event)`;
+      return eventWrapper;
     },
 
     /**
@@ -69,7 +82,7 @@ export function createContext(component) {
         }
       };
 
-      // Auto-invalidate when reactives change
+      // Auto-invalidate when component updates
       const originalSchedule = component._scheduleUpdate;
       component._scheduleUpdate = function() {
         computed._dirty = true;
@@ -77,37 +90,6 @@ export function createContext(component) {
       };
 
       return computed;
-    },
-
-    /**
-     * Watch reactive values
-     */
-    watch(reactive, callback, options = {}) {
-      let oldValue = reactive.value;
-      
-      const check = () => {
-        const newValue = reactive.value;
-        if (newValue !== oldValue) {
-          callback(newValue, oldValue);
-          oldValue = newValue;
-        }
-      };
-
-      if (options.immediate) {
-        callback(reactive.value);
-      }
-
-      // Set up watching
-      const originalSchedule = component._scheduleUpdate;
-      component._scheduleUpdate = function() {
-        check();
-        originalSchedule.call(this);
-      };
-
-      return () => {
-        // Cleanup - restore original schedule
-        component._scheduleUpdate = originalSchedule;
-      };
     },
 
     /**

@@ -1,6 +1,6 @@
 # Tron Component
 
-A simple, fast web component library that just works.
+A simple, fast web component library. Just 11KB minified.
 
 ## Install
 
@@ -28,9 +28,131 @@ component('hello-world', ({ render }) => {
 <hello-world></hello-world>
 ```
 
-That's it. You now have a web component.
+## API Reference
 
-## Reactive State
+### `component(tagName, definition)`
+
+Creates a new web component.
+
+```javascript
+component('my-component', (ctx) => {
+  // Your component logic here
+});
+```
+
+### Context Methods
+
+The definition function receives a context object with these methods:
+
+#### `react(value)`
+
+Creates reactive state that triggers re-renders when changed.
+
+```javascript
+const count = react(0);
+const items = react(['apple', 'banana']);
+const user = react({ name: 'John', age: 25 });
+
+// Update values
+count.value = 5;
+items.push('cherry');
+user.value.name = 'Jane';
+user.update(); // Manual trigger for object changes
+```
+
+#### `event(handler, name?)`
+
+Creates event handlers for templates and direct function calls.
+
+```javascript
+const increment = event(() => count.value++);
+const handleClick = event((e) => console.log('Clicked'));
+
+// Use in templates
+render(() => `<button onclick="${increment}">Count: ${count.value}</button>`);
+
+// Call directly
+increment(); // Also works
+```
+
+#### `computed(fn)`
+
+Creates cached computed properties that automatically recalculate when dependencies change.
+
+```javascript
+const items = react([
+  { name: 'Apple', price: 1.20, qty: 3 },
+  { name: 'Bread', price: 2.50, qty: 1 }
+]);
+
+const total = computed(() => {
+  return items.value.reduce((sum, item) => sum + (item.price * item.qty), 0);
+});
+
+render(() => `<div>Total: ${total.value.toFixed(2)}</div>`);
+```
+
+#### `element`
+
+Reference to the component's DOM element.
+
+```javascript
+const myComponent = element;
+const dialog = element.querySelector('dialog');
+```
+
+#### `props(list)`
+
+Defines component properties from HTML attributes.
+
+```javascript
+const { name, age, visible } = props([
+  'name',
+  { name: 'age', type: Number, default: 0 },
+  { name: 'visible', type: Boolean, default: false }
+]);
+
+render(() => `<p>Hello ${name}, you are ${age} years old</p>`);
+```
+
+#### `render(template)`
+
+Sets the component's HTML template.
+
+```javascript
+render(() => `<div>Current count: ${count.value}</div>`);
+```
+
+#### Lifecycle Hooks
+
+```javascript
+onMounted(() => console.log('Component mounted'));
+onUpdated(() => console.log('Component updated'));
+onBeforeUpdate(() => console.log('About to update'));
+```
+
+### Array Methods
+
+Reactive arrays have special methods:
+
+```javascript
+const todos = react(['Buy milk', 'Walk dog']);
+
+// Array methods trigger updates automatically
+todos.push('New item');
+todos.splice(0, 1);
+
+// Render arrays in templates
+render(() => `
+  <ul>
+    ${todos.render(item => `<li>${item}</li>`)}
+  </ul>
+`);
+```
+
+## Examples
+
+### Counter
 
 ```javascript
 component('click-counter', ({ react, event, render }) => {
@@ -49,118 +171,69 @@ component('click-counter', ({ react, event, render }) => {
 });
 ```
 
-## Props
-
-```javascript
-component('user-card', ({ props, render }) => {
-  const { name, age } = props(['name', 'age']);
-  
-  render(() => `
-    <div class="card">
-      <h3>${name}</h3>
-      <p>Age: ${age}</p>
-    </div>
-  `);
-});
-```
-
-```html
-<user-card name="John" age="25"></user-card>
-```
-
-## Lists
+### Todo List
 
 ```javascript
 component('todo-list', ({ react, event, render }) => {
-  const todos = react(['Buy milk', 'Walk dog']);
+  const todos = react(['Buy groceries', 'Walk the dog']);
+  const input = react('');
   
   const addTodo = event(() => {
-    todos.push('New todo');
+    if (input.value.trim()) {
+      todos.push(input.value);
+      input.value = '';
+    }
   });
   
-  render(() => `
-    <div>
-      <ul>
-        ${todos.render(todo => `<li>${todo}</li>`)}
-      </ul>
-      <button onclick="${addTodo}">Add Todo</button>
-    </div>
-  `);
-});
-```
-
-## Form Input
-
-```javascript
-component('name-form', ({ react, event, render }) => {
-  const name = react('');
-  
-  const updateName = event((e) => {
-    name.value = e.target.value;
+  const updateInput = event((e) => {
+    input.value = e.target.value;
   });
   
   render(() => `
     <div>
       <input 
-        type="text" 
-        value="${name.value}" 
-        oninput="${updateName}"
-        placeholder="Enter your name">
-      <p>Hello ${name.value || 'stranger'}!</p>
+        value="${input.value}" 
+        oninput="${updateInput}" 
+        placeholder="Add todo">
+      <button onclick="${addTodo}">Add</button>
+      <ul>
+        ${todos.render(todo => `<li>${todo}</li>`)}
+      </ul>
     </div>
   `);
 });
 ```
 
-## Computed Values
+### User Profile
 
 ```javascript
-component('shopping-cart', ({ react, computed, render }) => {
-  const items = react([
-    { name: 'Apple', price: 1.20, qty: 3 },
-    { name: 'Bread', price: 2.50, qty: 1 }
-  ]);
+component('user-profile', ({ react, event, render }) => {
+  const user = react({
+    name: 'John Doe',
+    email: 'john@example.com'
+  });
   
-  const total = computed(() => {
-    return items.value.reduce((sum, item) => sum + (item.price * item.qty), 0);
+  const updateName = event((e) => {
+    user.value.name = e.target.value;
+    user.update();
+  });
+  
+  const updateEmail = event((e) => {
+    user.value.email = e.target.value;
+    user.update();
   });
   
   render(() => `
     <div>
-      <h3>Shopping Cart</h3>
-      ${items.render(item => `
-        <div>${item.name} - ${item.price} x ${item.qty}</div>
-      `)}
-      <strong>Total: ${total.value.toFixed(2)}</strong>
-    </div>
-  `);
-});
-```
-
-## Watching Changes
-
-```javascript
-component('auto-saver', ({ react, watch, render }) => {
-  const text = react('');
-  const saved = react(false);
-  
-  // Auto-save when text changes
-  watch(text, (newText) => {
-    if (newText) {
-      localStorage.setItem('draft', newText);
-      saved.value = true;
-      setTimeout(() => saved.value = false, 2000);
-    }
-  });
-  
-  const updateText = event((e) => {
-    text.value = e.target.value;
-  });
-  
-  render(() => `
-    <div>
-      <textarea oninput="${updateText}">${text.value}</textarea>
-      ${saved.value ? '<p>✓ Saved</p>' : ''}
+      <input 
+        value="${user.value.name}" 
+        oninput="${updateName}" 
+        placeholder="Name">
+      <input 
+        value="${user.value.email}" 
+        oninput="${updateEmail}" 
+        placeholder="Email">
+      <p>Hello ${user.value.name} (${user.value.email})</p>
     </div>
   `);
 });
@@ -168,13 +241,15 @@ component('auto-saver', ({ react, watch, render }) => {
 
 ## Styling
 
-Add CSS to all your components:
+Add CSS to all components:
 
 ```javascript
 import { init } from 'tron-component';
 
 await init({
-  stylesheets: ['https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css'],
+  stylesheets: [
+    'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css'
+  ],
   cssText: `
     .card { padding: 1rem; border: 1px solid #ccc; }
     button { padding: 0.5rem 1rem; }
@@ -182,89 +257,18 @@ await init({
 });
 ```
 
-## Advanced Props
+## Manual Updates
+
+For objects, use `.update()` to trigger re-renders:
 
 ```javascript
-component('config-panel', ({ props, render }) => {
-  const settings = props([
-    { name: 'title', type: String, required: true },
-    { name: 'count', type: Number, default: 0 },
-    { name: 'visible', type: Boolean, default: false }
-  ]);
-  
-  render(() => `
-    <div>
-      <h2>${settings.title}</h2>
-      ${settings.visible ? `<p>Count: ${settings.count}</p>` : ''}
-    </div>
-  `);
-});
-```
+const data = react({ items: [] });
 
-```html
-<config-panel title="Dashboard" count="42" visible></config-panel>
-```
+// Change the object
+data.value.items.push('new item');
 
-## Lifecycle
-
-```javascript
-component('data-loader', ({ react, onMounted, render }) => {
-  const data = react(null);
-  
-  onMounted(async () => {
-    const response = await fetch('/api/data');
-    data.value = await response.json();
-  });
-  
-  render(() => `
-    <div>
-      ${data.value ? `<p>${data.value.message}</p>` : '<p>Loading...</p>'}
-    </div>
-  `);
-});
-```
-
-## Real Example
-
-```javascript
-component('weather-widget', ({ props, react, event, onMounted, render }) => {
-  const { city } = props([
-    { name: 'city', type: String, default: 'London' }
-  ]);
-  
-  const weather = react(null);
-  const loading = react(false);
-  
-  const fetchWeather = event(async () => {
-    loading.value = true;
-    try {
-      const response = await fetch(`/api/weather?city=${city}`);
-      weather.value = await response.json();
-    } catch (error) {
-      weather.value = { error: 'Failed to load weather' };
-    }
-    loading.value = false;
-  });
-  
-  onMounted(fetchWeather);
-  
-  render(() => `
-    <div class="weather-widget">
-      <h3>Weather in ${city}</h3>
-      ${loading.value ? `
-        <p>Loading...</p>
-      ` : weather.value ? `
-        ${weather.value.error ? `
-          <p class="error">${weather.value.error}</p>
-        ` : `
-          <p>${weather.value.temp}°C</p>
-          <p>${weather.value.description}</p>
-        `}
-      ` : ''}
-      <button onclick="${fetchWeather}">Refresh</button>
-    </div>
-  `);
-});
+// Manually trigger update
+data.update();
 ```
 
 ## TypeScript
@@ -274,42 +278,20 @@ Full TypeScript support included:
 ```typescript
 import { component, ComponentContext } from 'tron-component';
 
-component('typed-component', ({ react, render }: ComponentContext) => {
+component('my-component', ({ react, render }: ComponentContext) => {
   const count = react<number>(0);
-  // count.value is typed as number
+  render(() => `<div>${count.value}</div>`);
 });
 ```
 
-## API Reference
+## Browser Support
 
-### `react(value)`
-Creates reactive state. Returns object with `.value` property.
-
-### `event(handler, name?)`
-Creates event handler. Use in templates like `onclick="${handler}"`.
-
-### `props(list)`
-Defines component properties from HTML attributes.
-
-### `element`
-Reference to the component's DOM element.
-
-### `render(template)`
-Sets the component's HTML template.
-
-### `computed(fn)`
-Creates computed values that automatically update when dependencies change.
-
-### `watch(reactive, callback, options?)`
-Watches reactive values and runs callback when they change.
-
-### Lifecycle
-- `onMounted(callback)` - Runs when component is added to page
-- `onUpdated(callback)` - Runs after each re-render
-- `onBeforeUpdate(callback)` - Runs before each re-render
-
-That's everything you need to know. Build something cool!
+Works in all modern browsers that support Web Components:
+- Chrome 54+
+- Firefox 63+
+- Safari 10.1+
+- Edge 79+
 
 ## License
 
-MIT © Nelson M
+MIT - Nelson M

@@ -1,59 +1,48 @@
 /**
- * Component System - Main component creation and management
+ * Component System - Optimized without morphdom
  */
 
-import morphdom from 'morphdom';
 import { createContext } from './context.js';
 import { setupProps } from './props.js';
 
 const registry = new Map();
 
-// Update batcher for efficient rendering
-class UpdateBatcher {
-  constructor() {
-    this.pending = new Set();
-    this.scheduled = false;
-  }
-
-  schedule(component) {
-    this.pending.add(component);
-    if (!this.scheduled) {
-      this.scheduled = true;
-      requestAnimationFrame(() => this.flush());
-    }
-  }
-
-  flush() {
-    const updates = [...this.pending];
-    this.pending.clear();
-    this.scheduled = false;
-    
-    updates.forEach(component => {
-      if (component.isConnected) {
-        component._render();
-      }
-    });
+// Simple DOM diffing - much lighter than morphdom
+function updateDOM(parent, newHTML) {
+  // For most use cases, innerHTML is fast enough and much smaller
+  if (parent.innerHTML !== newHTML) {
+    parent.innerHTML = newHTML;
   }
 }
 
-const batcher = new UpdateBatcher();
+// Optimized update scheduler
+let updateQueue = new Set();
+let isScheduled = false;
 
-// Intersection observer for performance
-function setupVisibilityObserver(component) {
-  if (!window.IntersectionObserver) {
-    component._visible = true;
-    return;
-  }
-
-  const observer = new IntersectionObserver(
-    entries => {
-      component._visible = entries[0].isIntersecting;
-    },
-    { threshold: 0.1 }
-  );
+function scheduleUpdate(component) {
+  updateQueue.add(component);
   
-  observer.observe(component);
-  component._observer = observer;
+  if (!isScheduled) {
+    isScheduled = true;
+    requestAnimationFrame(() => {
+      const components = [...updateQueue];
+      updateQueue.clear();
+      isScheduled = false;
+      
+      // Process visible components first for better perceived performance
+      components.sort((a, b) => {
+        const aVisible = a._isVisible();
+        const bVisible = b._isVisible();
+        return bVisible - aVisible;
+      });
+      
+      components.forEach(comp => {
+        if (comp.isConnected) {
+          comp._render();
+        }
+      });
+    });
+  }
 }
 
 export function createComponent(tagName, definition) {
@@ -75,7 +64,6 @@ export function createComponent(tagName, definition) {
       this._template = null;
       this._lastHTML = '';
       this._firstRender = true;
-      this._visible = true;
       this._updateScheduled = false;
 
       // Create and call context
@@ -86,30 +74,25 @@ export function createComponent(tagName, definition) {
     connectedCallback() {
       this._applyStyles();
       setupProps(this);
-      setupVisibilityObserver(this);
       this._scheduleUpdate();
       this.dispatchEvent(new CustomEvent('mounted'));
     }
 
     disconnectedCallback() {
-      this._observer?.disconnect();
       this._reactives.clear();
       this.dispatchEvent(new CustomEvent('unmounted'));
     }
 
     attributeChangedCallback(name, oldValue, newValue) {
       if (oldValue !== newValue && this._props) {
-        const propName = this._kebabToCamel(name);
-        if (propName in this._props) {
-          this._scheduleUpdate();
-        }
+        this._scheduleUpdate();
       }
     }
 
     _scheduleUpdate() {
       if (!this._updateScheduled && this.isConnected) {
         this._updateScheduled = true;
-        batcher.schedule(this);
+        scheduleUpdate(this);
       }
     }
 
@@ -148,14 +131,9 @@ export function createComponent(tagName, definition) {
     }
 
     _renderUpdate(html) {
-      const template = document.createElement('template');
-      template.innerHTML = html;
-      
-      if (this.shadowRoot.firstElementChild && template.content.firstElementChild) {
-        morphdom(this.shadowRoot.firstElementChild, template.content.firstElementChild);
-      } else {
-        this.shadowRoot.innerHTML = html;
-      }
+      // Simple innerHTML replacement - works great for most cases
+      // and is much smaller than morphdom
+      updateDOM(this.shadowRoot, html);
     }
 
     _applyStyles() {
@@ -170,8 +148,14 @@ export function createComponent(tagName, definition) {
       return (styles && typeof styles === 'string') ? styles : null;
     }
 
-    _kebabToCamel(str) {
-      return str.replace(/-([a-z])/g, (_, letter) => letter.toUpperCase());
+    _isVisible() {
+      // Simple visibility check - no intersection observer overhead
+      try {
+        const rect = this.getBoundingClientRect();
+        return rect.top < window.innerHeight && rect.bottom > 0;
+      } catch {
+        return true;
+      }
     }
 
     forceUpdate() {

@@ -4,6 +4,7 @@
 
 export interface Reactive<T> {
   value: T;
+  update(): this;
   valueOf(): T;
   toString(): string;
 }
@@ -34,15 +35,13 @@ export interface PropConfig {
 export interface ComponentContext {
   react<T>(value: T): T extends any[] ? ReactiveArray<T[0]> : Reactive<T>;
   element: HTMLElement;
-  event(handler: Function, methodName?: string): string;
+  event(handler: Function, methodName?: string): Function & { toString(): string };
   props(propList: Array<string | PropConfig>): Record<string, any>;
   computed<T>(fn: () => T): Computed<T>;
-  watch<T>(reactive: Reactive<T>, callback: (newValue: T, oldValue?: T) => void, options?: { immediate?: boolean }): () => void;
   render(template: string | (() => string)): void;
   onMounted(callback: () => void): void;
   onUpdated(callback: () => void): void;
   onBeforeUpdate(callback: () => void): void;
-  onUnmounted(callback: () => void): void;
 }
 
 export interface InitOptions {

@@ -1,5 +1,5 @@
 /**
- * Reactive System - Using @preact/signals under the hood
+ * Reactive System - Simplified for smaller bundle size
  */
 
 import { signal, effect } from '@preact/signals-core';
@@ -7,7 +7,13 @@ import { signal, effect } from '@preact/signals-core';
 export function createReactive(component, initialValue) {
   const reactive = signal(initialValue);
   
-  // Add your API methods
+  // Add update trigger method for manual updates
+  reactive.update = function() {
+    // Force signal update by reassigning
+    this.value = this.value;
+    return this;
+  };
+  
   reactive.valueOf = function() { return this.value; };
   reactive.toString = function() { return String(this.value); };
   
@@ -45,6 +51,9 @@ export function createReactiveArray(component, initialValue) {
     };
   });
   
+  reactive.valueOf = function() { return this.value; };
+  reactive.toString = function() { return JSON.stringify(this.value); };
+  
   // Auto-update component when array changes
   effect(() => {
     reactive.value; // Subscribe to changes
@@ -55,4 +64,13 @@ export function createReactiveArray(component, initialValue) {
   
   component._reactives.set(reactive, true);
   return reactive;
+}
+
+// Simple helper to determine what type of reactive to create
+export function createReactiveAny(component, value) {
+  if (Array.isArray(value)) {
+    return createReactiveArray(component, value);
+  } else {
+    return createReactive(component, value);
+  }
 }
