@@ -70,6 +70,8 @@ export function createComponent(tagName, definition) {
       // Create and call context
       const context = createContext(this);
 
+      this._instanceId = `tc_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+
       // Apply plugins
       const enhancedContext = plugins.reduce((ctx, plugin) => plugin(ctx, this) || ctx, context);
 

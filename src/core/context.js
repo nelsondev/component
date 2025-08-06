@@ -21,12 +21,13 @@ export function createContext(component) {
      */
     event(handler, methodName = null) {
       const name = methodName || `_evt${component._eventCounter++}`;
+      const globalName = `${component._instanceId}_${name}`;
       
       component[name] = (...args) => handler(...args);
-      component._eventHandlers.add(name);
+      component._eventHandlers.add({ name, globalName });
       
-      // Store component reference globally using the handler name
-      window[name] = component;
+      // Store component reference globally using the unique global name
+      window[globalName] = component;
       
       const eventWrapper = (...args) => component[name](...args);
       
@@ -36,12 +37,12 @@ export function createContext(component) {
         const params = paramMatch ? paramMatch[1].trim() : '';
         
         if (!params) {
-          return `window.${name}.${name}()`;
+          return `window.${globalName}.${name}()`;
         }
         if (params.includes(',')) {
-          return `window.${name}.${name}(event)`;
+          return `window.${globalName}.${name}(event)`;
         }
-        return `(function(e){e.preventDefault();window.${name}.${name}(e)}).call(this,event)`;
+        return `(function(e){e.preventDefault();window.${globalName}.${name}(e)}).call(this,event)`;
       };
       
       return eventWrapper;
