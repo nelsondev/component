@@ -83,10 +83,6 @@
     }
   }
 
-  /**
-   * Props System - Component property management
-   */
-
   function camelToKebab(str) {
     return str.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase();
   }
@@ -171,15 +167,10 @@
     return proxy;
   }
 
-  /**
-   * Component Context - Simplified API for better performance
-   */
-
-
   function createContext(component) {
     return {
       /**
-       * Create reactive state (manual updates for objects)
+       * Create reactive state
        */
       react(value) {
         return createReactiveAny(component, value);
@@ -295,22 +286,14 @@
     };
   }
 
-  /**
-   * Component System - Optimized without morphdom
-   */
-
-
   const registry = new Map();
 
-  // Simple DOM diffing - much lighter than morphdom
   function updateDOM(parent, newHTML) {
-    // For most use cases, innerHTML is fast enough and much smaller
     if (parent.innerHTML !== newHTML) {
       parent.innerHTML = newHTML;
     }
   }
 
-  // Optimized update scheduler
   let updateQueue = new Set();
   let isScheduled = false;
 
@@ -425,8 +408,6 @@
       }
 
       _renderUpdate(html) {
-        // Simple innerHTML replacement - works great for most cases
-        // and is much smaller than morphdom
         updateDOM(this.shadowRoot, html);
       }
 
@@ -443,7 +424,6 @@
       }
 
       _isVisible() {
-        // Simple visibility check - no intersection observer overhead
         try {
           const rect = this.getBoundingClientRect();
           return rect.top < window.innerHeight && rect.bottom > 0;
@@ -507,6 +487,7 @@
       const imports = [];
       
       try {
+        // Check document.styleSheets (traditional method)
         Array.from(document.styleSheets).forEach(sheet => {
           try {
             const rules = sheet.cssRules || sheet.rules;
@@ -520,6 +501,14 @@
             if (sheet.href) imports.push(sheet.href);
           }
         });
+        
+        // Also check for Vite-injected <style> tags
+        document.querySelectorAll('style[data-vite-dev-id], style[type="text/css"]').forEach(styleTag => {
+          if (styleTag.textContent) {
+            css.push(styleTag.textContent);
+          }
+        });
+        
       } catch (error) {
         // Ignore errors
       }

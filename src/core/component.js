@@ -1,21 +1,14 @@
-/**
- * Component System - Optimized without morphdom
- */
-
 import { createContext } from './context.js';
 import { setupProps } from './props.js';
 
 const registry = new Map();
 
-// Simple DOM diffing - much lighter than morphdom
 function updateDOM(parent, newHTML) {
-  // For most use cases, innerHTML is fast enough and much smaller
   if (parent.innerHTML !== newHTML) {
     parent.innerHTML = newHTML;
   }
 }
 
-// Optimized update scheduler
 let updateQueue = new Set();
 let isScheduled = false;
 
@@ -131,8 +124,6 @@ export function createComponent(tagName, definition) {
     }
 
     _renderUpdate(html) {
-      // Simple innerHTML replacement - works great for most cases
-      // and is much smaller than morphdom
       updateDOM(this.shadowRoot, html);
     }
 
@@ -149,7 +140,6 @@ export function createComponent(tagName, definition) {
     }
 
     _isVisible() {
-      // Simple visibility check - no intersection observer overhead
       try {
         const rect = this.getBoundingClientRect();
         return rect.top < window.innerHeight && rect.bottom > 0;

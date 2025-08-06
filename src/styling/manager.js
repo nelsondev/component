@@ -43,6 +43,7 @@ export class StyleManager {
     const imports = [];
     
     try {
+      // Check document.styleSheets (traditional method)
       Array.from(document.styleSheets).forEach(sheet => {
         try {
           const rules = sheet.cssRules || sheet.rules;
@@ -56,6 +57,14 @@ export class StyleManager {
           if (sheet.href) imports.push(sheet.href);
         }
       });
+      
+      // Also check for Vite-injected <style> tags
+      document.querySelectorAll('style[data-vite-dev-id], style[type="text/css"]').forEach(styleTag => {
+        if (styleTag.textContent) {
+          css.push(styleTag.textContent);
+        }
+      });
+      
     } catch (error) {
       // Ignore errors
     }

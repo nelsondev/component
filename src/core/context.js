@@ -1,14 +1,10 @@
-/**
- * Component Context - Simplified API for better performance
- */
-
 import { createReactiveAny } from './reactive.js';
 import { createProps } from './props.js';
 
 export function createContext(component) {
   return {
     /**
-     * Create reactive state (manual updates for objects)
+     * Create reactive state
      */
     react(value) {
       return createReactiveAny(component, value);
