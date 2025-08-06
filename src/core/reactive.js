@@ -1,7 +1,3 @@
-/**
- * Reactive System - Simplified for smaller bundle size
- */
-
 import { signal, effect } from '@preact/signals-core';
 
 export function createReactive(component, initialValue) {
