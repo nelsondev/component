@@ -129,6 +129,7 @@ render(() => `<div>Current count: ${count.value}</div>`);
 onMounted(() => console.log('Component mounted'));
 onUpdated(() => console.log('Component updated'));
 onBeforeUpdate(() => console.log('About to update'));
+onUnmounted(() => console.log('Component unmounted'));
 ```
 
 ### Array Methods
@@ -148,6 +149,36 @@ render(() => `
     ${todos.render(item => `<li>${item}</li>`)}
   </ul>
 `);
+```
+
+### Content Projection (Slots)
+
+Use slots to project content into your components:
+
+```javascript
+component('my-card', ({ render }) => {
+  render(() => `
+    <div class="card">
+      <header>
+        <slot name="header"></slot>
+      </header>
+      <main>
+        <slot></slot>
+      </main>
+      <footer>
+        <slot name="footer"></slot>
+      </footer>
+    </div>
+  `);
+});
+```
+
+```html
+<my-card>
+  <h2 slot="header">Card Title</h2>
+  <p>This goes in the default slot</p>
+  <p slot="footer">Footer content</p>
+</my-card>
 ```
 
 ## Examples
@@ -241,20 +272,31 @@ component('user-profile', ({ react, event, render }) => {
 
 ## Styling
 
-Add CSS to all components:
+Since Tron components use Light DOM, you can style them with regular CSS:
 
-```javascript
-import { init } from 'tron-component';
+```css
+/* Style components directly */
+my-counter {
+  display: block;
+  padding: 1rem;
+  border: 1px solid #ccc;
+}
 
-await init({
-  stylesheets: [
-    'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css'
-  ],
-  cssText: `
-    .card { padding: 1rem; border: 1px solid #ccc; }
-    button { padding: 0.5rem 1rem; }
-  `
-});
+my-counter button {
+  padding: 0.5rem 1rem;
+  margin: 0.25rem;
+}
+
+/* Or use any CSS framework */
+my-counter .btn {
+  /* Bootstrap classes work fine */
+}
+```
+
+You can also include CSS files normally:
+
+```html
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
 ```
 
 ## Manual Updates
