@@ -271,6 +271,7 @@
   }
 
   const registry = new Map();
+  const plugins = [];
 
   function updateDOM(parent, newHTML) {
     if (parent.innerHTML !== newHTML) {
@@ -338,7 +339,11 @@
         
         // Create and call context
         const context = createContext(this);
-        definition.call(context, context);
+        
+        // Apply plugins
+        const enhancedContext = plugins.reduce((ctx, plugin) => plugin(ctx, this) || ctx, context);
+        
+        definition.call(enhancedContext, enhancedContext);
       }
 
       connectedCallback() {

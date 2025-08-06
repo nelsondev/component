@@ -40,6 +40,26 @@ component('my-component', (ctx) => {
 });
 ```
 
+### `use(plugin)`
+
+Registers a plugin that extends component functionality.
+
+```javascript
+import { use } from 'tron-component';
+
+// Add logging capability to all components
+use((context, component) => {
+  context.log = (msg) => console.log(`[${component.tagName}] ${msg}`);
+  return context;
+});
+
+// Use in components
+component('my-component', ({ log, render }) => {
+  log('Component initialized');
+  render(() => `<div>Hello</div>`);
+});
+```
+
 ### Context Methods
 
 The definition function receives a context object with these methods:
@@ -179,6 +199,50 @@ component('my-card', ({ render }) => {
   <p>This goes in the default slot</p>
   <p slot="footer">Footer content</p>
 </my-card>
+```
+
+## Plugin System
+
+Extend Tron Component with plugins that add new functionality:
+
+```javascript
+import { use } from 'tron-component';
+
+// Router plugin example
+use((context, component) => {
+  context.router = {
+    push: (path) => window.history.pushState({}, '', path),
+    current: () => window.location.pathname
+  };
+  return context;
+});
+
+// Persistence plugin example
+use((context) => {
+  const originalReact = context.react;
+  context.persist = (key, initialValue) => {
+    const stored = localStorage.getItem(key);
+    const reactive = originalReact(stored ? JSON.parse(stored) : initialValue);
+    
+    // Auto-save on changes
+    context.onUpdated(() => {
+      localStorage.setItem(key, JSON.stringify(reactive.value));
+    });
+    
+    return reactive;
+  };
+  return context;
+});
+
+// Use plugin features
+component('my-app', ({ router, persist, render }) => {
+  const user = persist('user', { name: '', loggedIn: false });
+  
+  render(() => `
+    <div>Current route: ${router.current()}</div>
+    <div>User: ${user.value.name}</div>
+  `);
+});
 ```
 
 ## Examples

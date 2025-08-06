@@ -1,6 +1,7 @@
 import { createContext } from './context.js';
 
 const registry = new Map();
+const plugins = [];
 
 function updateDOM(parent, newHTML) {
   if (parent.innerHTML !== newHTML) {
@@ -68,7 +69,11 @@ export function createComponent(tagName, definition) {
       
       // Create and call context
       const context = createContext(this);
-      definition.call(context, context);
+      
+      // Apply plugins
+      const enhancedContext = plugins.reduce((ctx, plugin) => plugin(ctx, this) || ctx, context);
+      
+      definition.call(enhancedContext, enhancedContext);
     }
 
     connectedCallback() {
@@ -237,4 +242,10 @@ export function createComponent(tagName, definition) {
   customElements.define(tagName, TronComponent);
   registry.set(tagName, TronComponent);
   return TronComponent;
+}
+
+export function use(plugin) {
+  if (typeof plugin === 'function') {
+    plugins.push(plugin);
+  }
 }
