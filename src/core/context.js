@@ -1,4 +1,3 @@
-// context.js - Light DOM only version
 import { createReactiveAny } from './reactive.js';
 import { createProps } from './props.js';
 import { computed } from '@preact/signals-core';
@@ -23,18 +22,14 @@ export function createContext(component) {
     event(handler, methodName = null) {
       const name = methodName || `_evt${component._eventCounter++}`;
      
-      // Store the actual function on the component
       component[name] = (...args) => handler(...args);
       
-      // Track for cleanup
       component._eventHandlers.add(name);
      
-      // Create a smart wrapper that can be used both ways
       const eventWrapper = (...args) => {
         return component[name](...args);
       };
      
-      // Add template string generation for Light DOM
       eventWrapper.toString = () => {
         const handlerStr = handler.toString();
         const hasParams = /^\s*\(\s*[^)]+\s*\)/.test(handlerStr);
@@ -53,6 +48,14 @@ export function createContext(component) {
      
       eventWrapper.valueOf = eventWrapper.toString;
       return eventWrapper;
+    },
+
+    /**
+     * Add event listener helper
+     */
+    addEventListener(element, type, handler, options) {
+      element.addEventListener(type, handler, options);
+      component._eventListeners.add({ element, type, handler });
     },
 
     /**

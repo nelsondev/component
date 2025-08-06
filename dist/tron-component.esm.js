@@ -77,7 +77,6 @@ function createReactiveAny(component, value) {
   }
 }
 
-// props.js - Cleaned up version
 function camelToKebab(str) {
   return str.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase();
 }
@@ -87,7 +86,7 @@ function convertValue(value, type) {
  
   switch (type) {
     case Boolean:
-      return value === 'true' || value === true || value === '';
+      return value === 'true' || value === true;
     case Number:
       const num = Number(value);
       return isNaN(num) ? 0 : num;
@@ -110,10 +109,8 @@ function createProps(component, propList) {
   const properties = {};
   const proxy = {};
   
-  // Initialize props cache
   component._propsCache = new Map();
  
-  // Process prop definitions
   propList.forEach(prop => {
     const config = typeof prop === 'string'
       ? { name: prop, type: String, default: '' }
@@ -122,18 +119,15 @@ function createProps(component, propList) {
     properties[config.name] = config;
   });
  
-  // Set up component metadata for attribute observation
   component.constructor.properties = properties;
   component.constructor.observedAttributes = Object.keys(properties).map(camelToKebab);
  
-  // Create proxy for props access
   Object.keys(properties).forEach(name => {
     const config = properties[name];
     const kebabName = camelToKebab(name);
    
     Object.defineProperty(proxy, name, {
       get() {
-        // Check cache first
         if (component._propsCache.has(name)) {
           return component._propsCache.get(name);
         }
@@ -151,7 +145,6 @@ function createProps(component, propList) {
           console.warn(`Invalid prop '${name}' value:`, value);
         }
         
-        // Cache the result
         component._propsCache.set(name, value);
         return value;
       },
@@ -164,7 +157,6 @@ function createProps(component, propList) {
        
         const convertedValue = convertValue(value, config.type);
         component.setAttribute(kebabName, convertedValue);
-        // Cache will be cleared by attributeChangedCallback
       }
     });
   });
@@ -172,8 +164,6 @@ function createProps(component, propList) {
   component._props = proxy;
   return proxy;
 }
-
-// context.js - Light DOM only version
 
 function createContext(component) {
   return {
@@ -195,18 +185,14 @@ function createContext(component) {
     event(handler, methodName = null) {
       const name = methodName || `_evt${component._eventCounter++}`;
      
-      // Store the actual function on the component
       component[name] = (...args) => handler(...args);
       
-      // Track for cleanup
       component._eventHandlers.add(name);
      
-      // Create a smart wrapper that can be used both ways
       const eventWrapper = (...args) => {
         return component[name](...args);
       };
      
-      // Add template string generation for Light DOM
       eventWrapper.toString = () => {
         const handlerStr = handler.toString();
         const hasParams = /^\s*\(\s*[^)]+\s*\)/.test(handlerStr);
@@ -225,6 +211,14 @@ function createContext(component) {
      
       eventWrapper.valueOf = eventWrapper.toString;
       return eventWrapper;
+    },
+
+    /**
+     * Add event listener helper
+     */
+    addEventListener(element, type, handler, options) {
+      element.addEventListener(type, handler, options);
+      component._eventListeners.add({ element, type, handler });
     },
 
     /**
@@ -272,8 +266,6 @@ function createContext(component) {
     }
   };
 }
-
-// component.js - Light DOM only version
 
 const registry = new Map();
 
@@ -326,16 +318,19 @@ function createComponent(tagName, definition) {
      
       // Initialize component state
       this._reactives = new Map();
-      this._eventHandlers = new Set(); // Track event handlers for cleanup
+      this._eventHandlers = new Set();
+      this._eventListeners = new Set();
       this._eventCounter = 0;
       this._template = null;
       this._lastHTML = '';
       this._firstRender = true;
       this._updateScheduled = false;
-      this._originalContent = null; // Store original slot content
-      this._namedSlots = {}; // Store named slot content
-      this._hasSlots = false; // Cache whether template has slots
-      this._defaultSlotContent = ''; // Cache default slot content
+      this._originalContent = null;
+      this._namedSlots = {};
+      this._hasSlots = false;
+      this._defaultSlotContent = '';
+      this._processedSlotsCache = null;
+      this._slotsVersion = 0;
       
       // Create and call context
       const context = createContext(this);
@@ -354,15 +349,20 @@ function createComponent(tagName, definition) {
       });
       this._eventHandlers.clear();
       
+      // Clean up event listeners
+      this._eventListeners.forEach(({ element, type, handler }) => {
+        element.removeEventListener(type, handler);
+      });
+      this._eventListeners.clear();
+      
       this._reactives.clear();
       this.dispatchEvent(new CustomEvent('unmounted'));
     }
 
     attributeChangedCallback(name, oldValue, newValue) {
       if (oldValue !== newValue && this._props) {
-        // Clear props cache for changed attribute
         if (this._propsCache) {
-          this._propsCache.delete(name);
+          this._propsCache.clear();
         }
         this._scheduleUpdate();
       }
@@ -388,32 +388,6 @@ function createComponent(tagName, definition) {
           
         if (html === this._lastHTML && !this._firstRender) return;
 
-        // Process slots in Light DOM
-        const processedHTML = this._processSlots(html);
-        updateDOM(this, processedHTML);
-        
-        this._lastHTML = html;
-        this._firstRender = false;
-        this.dispatchEvent(new CustomEvent('updated'));
-      } catch (error) {
-        console.error(`Error rendering ${tagName}:`, error);
-      }
-    }
-
-    _render() {
-      if (!this._template) return;
-     
-      this._updateScheduled = false;
-      this.dispatchEvent(new CustomEvent('beforeUpdate'));
-      
-      try {
-        const html = typeof this._template === 'function'
-          ? this._template()
-          : String(this._template);
-          
-        if (html === this._lastHTML && !this._firstRender) return;
-
-        // Process slots in Light DOM (optimized)
         const processedHTML = this._processSlots(html);
         updateDOM(this, processedHTML);
         
@@ -426,25 +400,34 @@ function createComponent(tagName, definition) {
     }
 
     _processSlots(html) {
-      // Capture original content before first render
       if (this._firstRender && !this._originalContent) {
         this._originalContent = this.innerHTML;
         this._namedSlots = this._extractNamedSlots();
         this._hasSlots = html.includes('<slot');
         this._defaultSlotContent = this._getDefaultSlotContent();
+        this._slotsVersion++;
       }
 
-      // Early exit if no slots in template
       if (!this._hasSlots) return html;
 
-      // Replace <slot> tags with actual content (cached)
-      return html.replace(/<slot(\s+name=["']([^"']+)["'])?[^>]*><\/slot>/g, (match, nameAttr, slotName) => {
+      if (this._processedSlotsCache && this._processedSlotsCache.version === this._slotsVersion) {
+        return this._processedSlotsCache.result;
+      }
+
+      const result = html.replace(/<slot(\s+name=["']([^"']+)["'])?[^>]*><\/slot>/g, (match, nameAttr, slotName) => {
         if (slotName) {
           return this._namedSlots[slotName] || '';
         } else {
           return this._defaultSlotContent;
         }
       });
+
+      this._processedSlotsCache = {
+        version: this._slotsVersion,
+        result: result
+      };
+
+      return result;
     }
 
     _extractNamedSlots() {
@@ -452,13 +435,11 @@ function createComponent(tagName, definition) {
       
       if (!this._originalContent) return namedSlots;
       
-      // Use faster parsing - only if we have slot attributes
       if (!this._originalContent.includes('slot=')) return namedSlots;
       
       const tempDiv = document.createElement('div');
       tempDiv.innerHTML = this._originalContent;
       
-      // Find all elements with slot attribute
       tempDiv.querySelectorAll('[slot]').forEach(el => {
         const slotName = el.getAttribute('slot');
         namedSlots[slotName] = el.outerHTML;
@@ -470,7 +451,6 @@ function createComponent(tagName, definition) {
     _getDefaultSlotContent() {
       if (!this._originalContent) return '';
       
-      // Early exit if no named slots exist
       if (!this._originalContent.includes('slot=')) {
         return this._originalContent;
       }
@@ -478,18 +458,19 @@ function createComponent(tagName, definition) {
       const tempDiv = document.createElement('div');
       tempDiv.innerHTML = this._originalContent;
       
-      // Remove named slot elements
       tempDiv.querySelectorAll('[slot]').forEach(el => el.remove());
       
       return tempDiv.innerHTML;
     }
 
     _isVisible() {
+      if (!this.isConnected) return false;
+      
       try {
         const rect = this.getBoundingClientRect();
         return rect.top < window.innerHeight && rect.bottom > 0;
       } catch {
-        return true;
+        return false;
       }
     }
 
