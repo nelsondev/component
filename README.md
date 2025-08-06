@@ -80,7 +80,8 @@ const user = react({ name: 'John', age: 25 });
 
 // Update values
 count.value = 5;
-items.push('cherry');
+items.value.push('cherry');
+items.update(); // Manual trigger for array changes
 user.value.name = 'Jane';
 user.update(); // Manual trigger for object changes
 ```
