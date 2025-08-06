@@ -14,11 +14,7 @@
   ],
   "scripts": {
     "build": "rollup -c",
-    "build:watch": "rollup -c --watch",
-    "dev": "rollup -c --watch",
-    "serve": "http-server . -p 8080 -c-1 --cors",
-    "prepublishOnly": "npm run build",
-    "clean": "rm -rf dist/*"
+    "build:watch": "rollup -c --watch"
   },
   "keywords": [
     "web-components",
@@ -46,8 +42,7 @@
   "devDependencies": {
     "rollup": "^4.0.0",
     "@rollup/plugin-terser": "^0.4.0",
-    "@rollup/plugin-node-resolve": "^15.0.0",
-    "http-server": "^14.0.0"
+    "@rollup/plugin-node-resolve": "^15.0.0"
   },
   "engines": {
     "node": ">=14.0.0"
