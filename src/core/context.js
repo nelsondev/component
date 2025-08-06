@@ -31,21 +31,7 @@ export function createContext(component) {
       };
     
       eventWrapper.toString = () => {
-        const handlerStr = handler.toString();
-        // Check if function has actual parameters (not just empty parentheses)
-        const paramMatch = handlerStr.match(/^\s*\(\s*([^)]*)\s*\)/);
-        const hasParams = paramMatch && paramMatch[1].trim().length > 0;
-      
-        if (!hasParams) {
-          return `this.${name}()`;
-        }
-      
-        const hasMultipleParams = paramMatch[1].includes(',');
-        if (hasMultipleParams) {
-          return `this.${name}(event)`;
-        }
-      
-        return `(function(e){e.preventDefault();this.${name}(e)}).call(this,event)`;
+        return `${name}()`;
       };
     
       eventWrapper.valueOf = eventWrapper.toString;
