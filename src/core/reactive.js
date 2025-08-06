@@ -2,17 +2,17 @@ import { signal, effect } from '@preact/signals-core';
 
 export function createReactive(component, initialValue) {
   const reactive = signal(initialValue);
-  
+ 
   // Add update trigger method for manual updates
   reactive.update = function() {
     // Force signal update by reassigning
     this.value = this.value;
     return this;
   };
-  
+ 
   reactive.valueOf = function() { return this.value; };
   reactive.toString = function() { return String(this.value); };
-  
+ 
   // Auto-update component when value changes
   effect(() => {
     reactive.value; // Subscribe to changes
@@ -20,24 +20,24 @@ export function createReactive(component, initialValue) {
       component._scheduleUpdate();
     }
   });
-  
+ 
   component._reactives.set(reactive, true);
   return reactive;
 }
 
 export function createReactiveArray(component, initialValue) {
   const reactive = signal([...initialValue]);
-  
+ 
   // Add render method for templates
   reactive.render = function(template) {
-    return this.value.map((item, index) => 
+    return this.value.map((item, index) =>
       typeof template === 'function' ? template(item, index) : template
     ).join('');
   };
-  
+ 
   // Override array methods to work with signals
   const arrayMethods = ['push', 'pop', 'shift', 'unshift', 'splice', 'sort', 'reverse'];
-  
+ 
   arrayMethods.forEach(method => {
     reactive[method] = function(...args) {
       const newArray = [...this.value];
@@ -46,10 +46,10 @@ export function createReactiveArray(component, initialValue) {
       return result;
     };
   });
-  
+ 
   reactive.valueOf = function() { return this.value; };
   reactive.toString = function() { return JSON.stringify(this.value); };
-  
+ 
   // Auto-update component when array changes
   effect(() => {
     reactive.value; // Subscribe to changes
@@ -57,7 +57,7 @@ export function createReactiveArray(component, initialValue) {
       component._scheduleUpdate();
     }
   });
-  
+ 
   component._reactives.set(reactive, true);
   return reactive;
 }

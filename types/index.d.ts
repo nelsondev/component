@@ -42,12 +42,7 @@ export interface ComponentContext {
   onMounted(callback: () => void): void;
   onUpdated(callback: () => void): void;
   onBeforeUpdate(callback: () => void): void;
-}
-
-export interface InitOptions {
-  stylesheets?: string[];
-  cssText?: string;
-  autoDetect?: boolean;
+  onUnmounted(callback: () => void): void;
 }
 
 export declare function component(
@@ -55,9 +50,4 @@ export declare function component(
   definition: (context: ComponentContext) => void
 ): typeof HTMLElement;
 
-export declare function init(options?: InitOptions): Promise<{
-  component: typeof component;
-  init: typeof init;
-}>;
-
-export default { component, init };
+export default { component };
