@@ -508,6 +508,12 @@ function createComponent(tagName, definition) {
   return TronComponent;
 }
 
+function use(plugin) {
+  if (typeof plugin === 'function') {
+    plugins.push(plugin);
+  }
+}
+
 /**
  * Tron Component Library
  * Ultra-simple reactive web component library
@@ -522,7 +528,7 @@ function component(tagName, definition) {
 // Global registration for script tag usage
 if (typeof window !== 'undefined') {
   window.component = component;
-  window.TronComponent = { component };
+  window.TronComponent = { component, use };
 }
 
-export { component };
+export { component, use };

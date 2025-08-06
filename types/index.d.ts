@@ -36,6 +36,7 @@ export interface ComponentContext {
   react<T>(value: T): T extends any[] ? ReactiveArray<T[0]> : Reactive<T>;
   element: HTMLElement;
   event(handler: Function, methodName?: string): Function & { toString(): string };
+  addEventListener(element: Element, type: string, handler: Function, options?: any): void;
   props(propList: Array<string | PropConfig>): Record<string, any>;
   computed<T>(fn: () => T): Computed<T>;
   render(template: string | (() => string)): void;
@@ -45,9 +46,13 @@ export interface ComponentContext {
   onUnmounted(callback: () => void): void;
 }
 
+export type Plugin = (context: ComponentContext, component: HTMLElement) => ComponentContext | void;
+
 export declare function component(
   tagName: string,
   definition: (context: ComponentContext) => void
 ): typeof HTMLElement;
 
-export default { component };
+export declare function use(plugin: Plugin): void;
+
+export default { component, use };

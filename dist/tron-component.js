@@ -514,6 +514,12 @@
     return TronComponent;
   }
 
+  function use(plugin) {
+    if (typeof plugin === 'function') {
+      plugins.push(plugin);
+    }
+  }
+
   /**
    * Tron Component Library
    * Ultra-simple reactive web component library
@@ -528,9 +534,10 @@
   // Global registration for script tag usage
   if (typeof window !== 'undefined') {
     window.component = component;
-    window.TronComponent = { component };
+    window.TronComponent = { component, use };
   }
 
   exports.component = component;
+  exports.use = use;
 
 }));
