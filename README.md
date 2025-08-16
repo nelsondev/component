@@ -8,102 +8,93 @@ Lightweight web component library with a clean API for building reusable custom 
 npm install @nelsondev/component
 ```
 
-## Quick Start
+## Hello World
 
 ```javascript
 import { defineComponent } from '@nelsondev/component';
 
 defineComponent('hello-world', ({ defineProps, defineTemplate }) => {
-  const props = defineProps(['name']);
-  defineTemplate(`<h1>Hello, ${props.name || 'World'}!</h1>`);
+    const props = defineProps(['name']);
+    defineTemplate(`<h1>Hello, ${props.name}!</h1>`);
 });
 ```
 
 ```html
-<hello-world name="Developer"></hello-world>
+<hello-world name="nelsontron"></hello-world>
 ```
 
 ## API Reference
+### `defineComponent(tagName, definition)`
+Register a component.
 
-### defineComponent(tagName, definition)
-
-Register a custom element.
-
-**Parameters:**
+#### Parameters
 - `tagName` (string) - Custom element name (must contain hyphen)
 - `definition` (function) - Component definition receiving context object
 
-**Returns:** Custom element class
+#### Exampple
+```javascript
+defineComponent('my-component', (context) => {
+    // component definition
+})
+```
 
-### defineProps(propList)
+---
+### `element`
+Reference to the component's DOM element.
 
+---
+### `defineSlots(names)`
+Define content projection slots.
+
+#### Parameters
+- `names` (array) - Array of slot names (defaults to ['default'])
+
+---
+### `defineProps(propsList)`
 Define component properties with automatic type conversion.
 
-**Parameters:**
+#### Parameters
 - `propList` (array) - Array of property definitions
 
-**Returns:** Props object
+---
+### `defineStyle()`
+> Get component's CSS classes.
 
-### defineEvent(handler)
-
+---
+### `defineEvent(handler)`
 Create event handler for templates.
 
-**Parameters:**
+#### Parameters:
 - `handler` (function) - Event handler function
 
-**Returns:** Event wrapper function
-
-### exportEvent(name, handler)
-
+---
+### `exportEvent(name, handler)`
 Expose method on component instance.
 
-**Parameters:**
+#### Parameters:
 - `name` (string) - Method name
 - `handler` (function) - Handler function
 
-### defineSlots(names)
-
-Define content projection slots.
-
-**Parameters:**
-- `names` (array) - Array of slot names (defaults to ['default'])
-
-**Returns:** Slots object
-
-### defineTemplate(html)
-
-Set component HTML template.
-
-**Parameters:**
-- `html` (string) - HTML template string
-
-### defineStyle()
-
-Get component's CSS classes.
-
-**Returns:** String of CSS classes
-
-### onMounted(callback)
-
+---
+#### `onMounted(callback)`
 Register mounted lifecycle hook.
 
-**Parameters:**
+#### Parameters:
 - `callback` (function) - Callback function
 
-### onUnmounted(callback)
+---
+#### `onUnmounted(callback)`
+Register mounted lifecycle hook.
 
-Register unmounted lifecycle hook.
-
-**Parameters:**
+#### Parameters:
 - `callback` (function) - Callback function
 
-### element
+---
+### `defineTemplate(html)`
+Set component HTML template.
 
-Reference to the component's DOM element.
-
-### render()
-
-Manually re-render component.
+#### Parameters:
+- `html` (string) - HTML template string
 
 ## Examples
 
