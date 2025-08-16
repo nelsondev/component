@@ -1,22 +1,38 @@
 {
 	"name": "@nelsondev/component",
-	"version": "1.0.5",
-	"description": "Ultra-simple web component library with a clean API.",
+	"version": "1.0.6",
+	"description": "Ultra-lightweight web component library with a clean API for building reusable components.",
 	"main": "dist/tron-component.js",
 	"module": "dist/tron-component.esm.js",
+	"types": "src/types.d.ts",
+	"exports": {
+		".": {
+			"import": "./dist/tron-component.esm.js",
+			"require": "./dist/tron-component.js",
+			"types": "./src/types.d.ts"
+		}
+	},
+	"files": [
+		"dist/",
+		"src/types.d.ts",
+		"README.md",
+		"LICENSE"
+	],
 	"scripts": {
 		"build": "rollup -c",
-		"build:watch": "rollup -c --watch"
+		"build:watch": "rollup -c --watch",
+		"prepublishOnly": "npm run build"
 	},
 	"keywords": [
 		"web-components",
 		"reactive",
 		"frontend",
 		"ui-library",
-		"shadow-dom",
 		"custom-elements",
 		"lightweight",
-		"performance"
+		"performance",
+		"vanilla-js",
+		"component-system"
 	],
 	"author": "Nelson M <nelson@example.com>",
 	"license": "MIT",
@@ -28,17 +44,14 @@
 		"url": "https://github.com/nelsondev/component/issues"
 	},
 	"homepage": "https://github.com/nelsondev/component#readme",
-	"dependencies": {
-	},
 	"devDependencies": {
-        "@rollup/plugin-commonjs": "^25.0.0",
-        "@rollup/plugin-node-resolve": "^15.0.0",
-        "@rollup/plugin-terser": "^0.4.0",
-        "rollup": "^4.0.0",
-        "rollup-plugin-postcss": "^4.0.2"
-    },
+		"@rollup/plugin-commonjs": "^26.0.1",
+		"@rollup/plugin-node-resolve": "^15.2.3",
+		"@rollup/plugin-terser": "^0.4.4",
+		"rollup": "^4.21.2"
+	},
 	"engines": {
-		"node": ">=14.0.0"
+		"node": ">=16.0.0"
 	},
 	"browserslist": [
 		"> 1%",
