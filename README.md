@@ -13,9 +13,9 @@ npm install @nelsondev/component
 ```javascript
 import { defineComponent } from '@nelsondev/component';
 
-defineComponent('hello-world', ({ defineProps, defineTemplate }) => {
-    const props = defineProps(['name']);
-    defineTemplate(`<h1>Hello, ${props.name}!</h1>`);
+defineComponent('hello-world', (context) => {
+    const props = context.defineProps(['name']);
+    context.defineTemplate(`<h1>Hello, ${props.name}!</h1>`);
 });
 ```
 
@@ -27,16 +27,9 @@ defineComponent('hello-world', ({ defineProps, defineTemplate }) => {
 ### `defineComponent(tagName, definition)`
 Register a component.
 
-#### Parameters
+ **Parameters:**
 - `tagName` (string) - Custom element name (must contain hyphen)
 - `definition` (function) - Component definition receiving context object
-
-#### Exampple
-```javascript
-defineComponent('my-component', (context) => {
-    // component definition
-})
-```
 
 ---
 ### `element`
@@ -46,14 +39,14 @@ Reference to the component's DOM element.
 ### `defineSlots(names)`
 Define content projection slots.
 
-#### Parameters
+**Parameters:**
 - `names` (array) - Array of slot names (defaults to ['default'])
 
 ---
 ### `defineProps(propsList)`
 Define component properties with automatic type conversion.
 
-#### Parameters
+**Parameters:**
 - `propList` (array) - Array of property definitions
 
 ---
@@ -64,14 +57,14 @@ Get component's CSS classes.
 ### `defineEvent(handler)`
 Create event handler for templates.
 
-#### Parameters:
+**Parameters:**
 - `handler` (function) - Event handler function
 
 ---
 ### `exportEvent(name, handler)`
 Expose method on component instance.
 
-#### Parameters:
+**Parameters:**
 - `name` (string) - Method name
 - `handler` (function) - Handler function
 
@@ -79,21 +72,21 @@ Expose method on component instance.
 #### `onMounted(callback)`
 Register mounted lifecycle hook.
 
-#### Parameters:
+**Parameters:**
 - `callback` (function) - Callback function
 
 ---
 #### `onUnmounted(callback)`
 Register mounted lifecycle hook.
 
-#### Parameters:
+**Parameters:**
 - `callback` (function) - Callback function
 
 ---
 ### `defineTemplate(html)`
 Set component HTML template.
 
-#### Parameters:
+**Parameters:**
 - `html` (string) - HTML template string
 
 ## Examples
@@ -186,6 +179,23 @@ defineComponent('my-card', ({ defineSlots, defineTemplate }) => {
     <button>Action</button>
   </template>
 </my-card>
+```
+
+### Class injection
+```javascript
+defineComponent('my-component', ({ defineStyle, defineTemplate }) => {
+    const style = defineStyle()
+
+    defineTemplate(`
+        <div class="${style}">
+            <h1>Css classes are passed into the inner element</h1>
+        </div>
+    `)
+})
+```
+
+```html
+<my-component class="d-flex align-center justify-center m-4"></my-component>
 ```
 
 ## Browser Support
