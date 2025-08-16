@@ -58,7 +58,7 @@ Define component properties with automatic type conversion.
 
 ---
 ### `defineStyle()`
-> Get component's CSS classes.
+Get component's CSS classes.
 
 ---
 ### `defineEvent(handler)`
