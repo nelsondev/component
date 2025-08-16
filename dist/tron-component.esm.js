@@ -1,9 +1,9 @@
 /*! @nelsondev/component v1.0.6 - Ultra-lightweight web component library */
-function camelToKebab(str) {
-    return str.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase();
-}
+const camelToKebab = str => str.replace(/-([a-z])/g, (_, letter) => letter.toUpperCase());
 
-function convertValue(value, type) {
+const kebabToCamel = str => str.replace(/-([a-z])/g, (_, letter) => letter.toUpperCase());
+
+const convertValue = (value, type) => {
     if (value == null) return value;
 
     if (type === Boolean) {
@@ -24,67 +24,7 @@ function convertValue(value, type) {
         return value;
     }
     return String(value);
-}
-
-function createProps(component, propList) {
-    const properties = {};
-    const proxy = {};
-
-    component._propsCache = new Map();
-
-    propList.forEach(prop => {
-        const config = typeof prop === 'string'
-            ? { name: prop, type: String, default: '' }
-            : { type: String, default: '', ...prop };
-
-        properties[config.name] = config;
-    });
-
-    component.constructor.properties = properties;
-    component.constructor.observedAttributes = Object.keys(properties).map(camelToKebab);
-
-    Object.keys(properties).forEach(name => {
-        const config = properties[name];
-        const kebabName = camelToKebab(name);
-
-        Object.defineProperty(proxy, name, {
-            get() {
-                if (component._propsCache.has(name)) {
-                    return component._propsCache.get(name);
-                }
-
-                const attributeValue = component.getAttribute(kebabName);
-                const value = attributeValue !== null
-                    ? convertValue(attributeValue, config.type)
-                    : config.default;
-
-                if (config.required && value == null) {
-                    console.warn(`Required prop '${name}' is missing on ${component.tagName}`);
-                }
-
-                if (config.validator && !config.validator(value)) {
-                    console.warn(`Invalid prop '${name}' value:`, value);
-                }
-
-                component._propsCache.set(name, value);
-                return value;
-            },
-
-            set(value) {
-                if (config.validator && !config.validator(value)) {
-                    console.warn(`Invalid prop '${name}' value:`, value);
-                    return;
-                }
-
-                const convertedValue = convertValue(value, config.type);
-                component.setAttribute(kebabName, convertedValue);
-            }
-        });
-    });
-
-    component._props = proxy;
-    return proxy;
-}
+};
 
 function createContext(component) {
     return {
@@ -97,7 +37,63 @@ function createContext(component) {
          * Define component properties with cleaner API
          */
         defineProps(propList = []) {
-            return createProps(component, propList);
+            const properties = {};
+            const proxy = {};
+
+            component._propsCache = new Map();
+
+            propList.forEach(prop => {
+                const config = typeof prop === 'string'
+                    ? { name: prop, type: String, default: '' }
+                    : { type: String, default: '', ...prop };
+
+                properties[config.name] = config;
+            });
+
+            component.constructor.properties = properties;
+            component.constructor.observedAttributes = Object.keys(properties).map(camelToKebab);
+
+            Object.keys(properties).forEach(name => {
+                const config = properties[name];
+                const kebabName = camelToKebab(name);
+
+                Object.defineProperty(proxy, name, {
+                    get() {
+                        if (component._propsCache.has(name)) {
+                            return component._propsCache.get(name);
+                        }
+
+                        const attributeValue = component.getAttribute(kebabName);
+                        const value = attributeValue !== null
+                            ? convertValue(attributeValue, config.type)
+                            : config.default;
+
+                        if (config.required && value == null) {
+                            console.warn(`Required prop '${name}' is missing on ${component.tagName}`);
+                        }
+
+                        if (config.validator && !config.validator(value)) {
+                            console.warn(`Invalid prop '${name}' value:`, value);
+                        }
+
+                        component._propsCache.set(name, value);
+                        return value;
+                    },
+
+                    set(value) {
+                        if (config.validator && !config.validator(value)) {
+                            console.warn(`Invalid prop '${name}' value:`, value);
+                            return;
+                        }
+
+                        const convertedValue = convertValue(value, config.type);
+                        component.setAttribute(kebabName, convertedValue);
+                    }
+                });
+            });
+
+            component._props = proxy;
+            return proxy;
         },
 
         /**
@@ -270,7 +266,7 @@ function defineComponent(tagName, definition) {
 
         attributeChangedCallback(name, oldValue, newValue) {
             if (oldValue !== newValue && this._propsCache) {
-                this._propsCache.delete(this._kebabToCamel(name));
+                this._propsCache.delete(kebabToCamel(name));
             }
         }
 
@@ -294,10 +290,6 @@ function defineComponent(tagName, definition) {
             this.dispatchEvent(new CustomEvent('rerendered', { 
                 detail: { timestamp: Date.now() }
             }));
-        }
-
-        _kebabToCamel(str) {
-            return str.replace(/-([a-z])/g, (_, letter) => letter.toUpperCase());
         }
 
         _captureOriginalContent() {

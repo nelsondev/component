@@ -1,4 +1,5 @@
 import { createContext } from './context.js';
+import { kebabToCamel } from '../utils/utils.js';
 
 const registry = new Map();
 
@@ -60,7 +61,7 @@ export function defineComponent(tagName, definition) {
 
         attributeChangedCallback(name, oldValue, newValue) {
             if (oldValue !== newValue && this._propsCache) {
-                this._propsCache.delete(this._kebabToCamel(name));
+                this._propsCache.delete(kebabToCamel(name));
             }
         }
 
@@ -84,10 +85,6 @@ export function defineComponent(tagName, definition) {
             this.dispatchEvent(new CustomEvent('rerendered', { 
                 detail: { timestamp: Date.now() }
             }));
-        }
-
-        _kebabToCamel(str) {
-            return str.replace(/-([a-z])/g, (_, letter) => letter.toUpperCase());
         }
 
         _captureOriginalContent() {
