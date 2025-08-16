@@ -1,6 +1,6 @@
 # @nelsondev/component
 
-Ultra-lightweight web component library with a clean API for building reusable components.
+Lightweight web component library with a clean API for building reusable custom elements.
 
 ## Installation
 
@@ -13,190 +13,97 @@ npm install @nelsondev/component
 ```javascript
 import { defineComponent } from '@nelsondev/component';
 
-defineComponent('my-button', ({ defineProps, defineTemplate, defineEvent }) => {
-  const props = defineProps([
-    { name: 'text', type: String, required: true },
-    { name: 'disabled', type: Boolean, default: false }
-  ]);
-
-  const handleClick = defineEvent(() => {
-    console.log('Button clicked!');
-  });
-
-  defineTemplate(`
-    <button onclick="${handleClick}" ${props.disabled ? 'disabled' : ''}>
-      ${props.text}
-    </button>
-  `);
+defineComponent('hello-world', ({ defineProps, defineTemplate }) => {
+  const props = defineProps(['name']);
+  defineTemplate(`<h1>Hello, ${props.name || 'World'}!</h1>`);
 });
 ```
 
 ```html
-<my-button text="Click me" disabled="false"></my-button>
+<hello-world name="Developer"></hello-world>
 ```
 
 ## API Reference
 
 ### defineComponent(tagName, definition)
 
-Creates a custom web component.
+Register a custom element.
 
-```javascript
-defineComponent('my-component', (context) => {
-  // Component definition
-});
-```
+**Parameters:**
+- `tagName` (string) - Custom element name (must contain hyphen)
+- `definition` (function) - Component definition receiving context object
 
-### Context Methods
+**Returns:** Custom element class
 
-#### defineProps(propList)
+### defineProps(propList)
 
 Define component properties with automatic type conversion.
 
-```javascript
-const props = defineProps([
-  'title',                                    // String prop
-  { name: 'count', type: Number, default: 0 }, // Number with default
-  { name: 'items', type: Array, required: true }, // Required array
-  { name: 'visible', type: Boolean }           // Boolean prop
-]);
+**Parameters:**
+- `propList` (array) - Array of property definitions
 
-// Usage: <my-component title="Hello" count="5" visible></my-component>
-// Access: props.title, props.count, props.items, props.visible
-```
+**Returns:** Props object
 
-**Supported types:** `String`, `Number`, `Boolean`, `Array`, `Object`
+### defineEvent(handler)
 
-#### defineEvent(handler)
+Create event handler for templates.
 
-Create event handlers for templates.
+**Parameters:**
+- `handler` (function) - Event handler function
 
-```javascript
-const handleSubmit = defineEvent((event) => {
-  event.preventDefault();
-  console.log('Form submitted');
-});
+**Returns:** Event wrapper function
 
-const handleClick = defineEvent(() => {
-  alert('Clicked!');
-});
+### exportEvent(name, handler)
 
-defineTemplate(`
-  <form onsubmit="${handleSubmit}">
-    <button onclick="${handleClick}">Submit</button>
-  </form>
-`);
-```
+Expose method on component instance.
 
-#### exportEvent(methodName, handler)
+**Parameters:**
+- `name` (string) - Method name
+- `handler` (function) - Handler function
 
-Expose methods on the component instance.
+### defineSlots(names)
 
-```javascript
-const show = defineEvent(() => {
-  element.style.display = 'block';
-});
+Define content projection slots.
 
-exportEvent('show', show);
+**Parameters:**
+- `names` (array) - Array of slot names (defaults to ['default'])
 
-// Usage: document.querySelector('my-modal').show()
-```
+**Returns:** Slots object
 
-#### defineSlots(slotNames)
+### defineTemplate(html)
 
-Handle content projection.
+Set component HTML template.
 
-```javascript
-const slots = defineSlots(['header', 'default', 'footer']);
+**Parameters:**
+- `html` (string) - HTML template string
 
-defineTemplate(`
-  <div class="modal">
-    <header>${slots.header}</header>
-    <main>${slots.default}</main>
-    <footer>${slots.footer}</footer>
-  </div>
-`);
-```
+### defineStyle()
 
-```html
-<my-modal>
-  <template slot="header">Modal Title</template>
-  <p>Modal content goes here</p>
-  <template slot="footer">
-    <button>Close</button>
-  </template>
-</my-modal>
-```
+Get component's CSS classes.
 
-#### defineTemplate(template)
+**Returns:** String of CSS classes
 
-Set the component's HTML.
+### onMounted(callback)
 
-```javascript
-defineTemplate(`
-  <div class="card">
-    <h2>${props.title}</h2>
-    <p>${slots.default}</p>
-  </div>
-`);
-```
+Register mounted lifecycle hook.
 
-#### defineStyle()
+**Parameters:**
+- `callback` (function) - Callback function
 
-Access component's CSS classes.
+### onUnmounted(callback)
 
-```javascript
-const style = defineStyle();
+Register unmounted lifecycle hook.
 
-defineTemplate(`
-  <div class="component ${style}">
-    Content
-  </div>
-`);
-```
+**Parameters:**
+- `callback` (function) - Callback function
 
-#### Lifecycle Hooks
+### element
 
-```javascript
-onMounted(() => {
-  console.log('Component mounted');
-});
+Reference to the component's DOM element.
 
-onUnmounted(() => {
-  console.log('Component unmounted');
-});
-```
+### render()
 
-## Advanced Features
-
-### Property Validation
-
-```javascript
-const props = defineProps([
-  {
-    name: 'email',
-    type: String,
-    required: true,
-    validator: (value) => value.includes('@')
-  }
-]);
-```
-
-### Re-rendering
-
-```javascript
-// Manually trigger re-render
-document.querySelector('my-component').render();
-```
-
-### Component Reference
-
-```javascript
-defineComponent('my-component', ({ element }) => {
-  // element is the component's DOM element
-  element.classList.add('initialized');
-});
-```
+Manually re-render component.
 
 ## Examples
 
@@ -207,11 +114,11 @@ defineComponent('my-counter', ({ defineProps, defineTemplate, defineEvent }) => 
   const props = defineProps([
     { name: 'value', type: Number, default: 0 }
   ]);
-
+  
   const increment = defineEvent(() => {
     props.value = props.value + 1;
   });
-
+  
   defineTemplate(`
     <div>
       <span>Count: ${props.value}</span>
@@ -221,39 +128,79 @@ defineComponent('my-counter', ({ defineProps, defineTemplate, defineEvent }) => 
 });
 ```
 
+```html
+<my-counter value="5"></my-counter>
+```
+
 ### Modal Component
 
 ```javascript
 defineComponent('my-modal', ({ defineSlots, defineEvent, exportEvent, element }) => {
-  const slots = defineSlots(['default']);
-
+  const slots = defineSlots();
+  
   const show = defineEvent(() => {
     element.style.display = 'block';
   });
-
+  
   const hide = defineEvent(() => {
     element.style.display = 'none';
   });
-
+  
   exportEvent('show', show);
   exportEvent('hide', hide);
-
+  
   defineTemplate(`
     <div class="modal-backdrop" onclick="${hide}">
       <div class="modal-content" onclick="event.stopPropagation()">
         ${slots.default}
-        <button onclick="${hide}">Close</button>
+        <button onclick="${hide}">×</button>
       </div>
     </div>
   `);
 });
 ```
 
+```html
+<my-modal>
+  <h2>Modal Title</h2>
+  <p>Modal content here</p>
+</my-modal>
+
+<script>
+  document.querySelector('my-modal').show();
+</script>
+```
+
+### Slotted Component
+
+```javascript
+defineComponent('my-card', ({ defineSlots, defineTemplate }) => {
+  const slots = defineSlots(['header', 'default', 'footer']);
+  
+  defineTemplate(`
+    <div class="card">
+      <header>${slots.header}</header>
+      <main>${slots.default}</main>
+      <footer>${slots.footer}</footer>
+    </div>
+  `);
+});
+```
+
+```html
+<my-card>
+  <template slot="header">Card Title</template>
+  <p>Card content</p>
+  <template slot="footer">
+    <button>Action</button>
+  </template>
+</my-card>
+```
+
 ## Browser Support
 
-Modern browsers with Custom Elements v1 support:
 - Chrome 54+
-- Firefox 63+  
+- Firefox 63+
 - Safari 10.1+
 - Edge 79+
 
