@@ -7,6 +7,10 @@ Lightweight web component library with a clean API for building reusable custom 
 ```bash
 npm install @nelsondev/component
 ```
+Or use it directly in browser
+```html
+<script src="https://unpkg.com/@nelsondev/component/dist/tron-component.min.js"></script>
+```
 
 ## Hello World
 
