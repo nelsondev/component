@@ -1,6 +1,6 @@
 # @nelsondev/component
 
-Lightweight web component library with a clean API for building reusable custom elements.
+Lightweight web component library with a clean API for building reusable custom elements. Only 6KB minified.
 
 ## Installation
 
