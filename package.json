@@ -1,26 +1,26 @@
 {
 	"name": "@nelsondev/component",
-	"version": "1.1.0",
+	"version": "1.1.1",
 	"description": "Ultra-lightweight web component library with a clean API for building reusable components.",
 	"main": "dist/tron-component.js",
 	"module": "dist/tron-component.esm.js",
-	"types": "src/types.d.ts",
+	"types": "types/index.d.ts",
 	"exports": {
 		".": {
 			"import": "./dist/tron-component.esm.js",
 			"require": "./dist/tron-component.js",
-			"types": "./src/types.d.ts"
+			"types": "./types/index.d.ts"
 		}
 	},
 	"files": [
 		"dist/",
-		"src/types.d.ts",
+		"types/",
+		"src/",
 		"README.md",
 		"LICENSE"
 	],
 	"scripts": {
-		"build": "rollup -c",
-		"build:watch": "rollup -c --watch"
+		"build": "rollup -c"
 	},
 	"keywords": [
 		"web-components",

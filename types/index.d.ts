@@ -118,7 +118,3 @@ declare global {
 		};
 	}
 }
-
-export default {
-	defineComponent
-};
