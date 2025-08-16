@@ -396,6 +396,18 @@
         return ColeComponent;
     }
 
+    /**
+     * Tron Component
+     * @author Nelson M
+     */
+
+
+    // Expose globally for script tag usage
+    if (typeof window !== 'undefined') {
+        window.defineComponent = defineComponent;
+        window.TronComponent = { defineComponent };
+    }
+
     exports.defineComponent = defineComponent;
 
 }));

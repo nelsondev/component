@@ -390,5 +390,17 @@ function defineComponent(tagName, definition) {
     return ColeComponent;
 }
 
+/**
+ * Tron Component
+ * @author Nelson M
+ */
+
+
+// Expose globally for script tag usage
+if (typeof window !== 'undefined') {
+    window.defineComponent = defineComponent;
+    window.TronComponent = { defineComponent };
+}
+
 export { defineComponent };
 //# sourceMappingURL=tron-component.esm.js.map
