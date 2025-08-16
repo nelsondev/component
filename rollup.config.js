@@ -1,52 +1,35 @@
 import { nodeResolve } from '@rollup/plugin-node-resolve';
+import commonjs from '@rollup/plugin-commonjs';
+import postcss from 'rollup-plugin-postcss';
 import terser from '@rollup/plugin-terser';
 
-const banner = `/*!
- * Tron Component
- * (c) 2024 Nelson M
- * MIT
- */`;
-
-export default [
-  // ES Module build
-  {
+export default {
     input: 'src/index.js',
     output: {
-      file: 'dist/tron-component.esm.js',
-      format: 'es',
-      banner
+        file: 'dist/tron-component.min.js',
+        format: 'umd',
+        name: 'TronComponent',
+        banner: '/*! Tron Component Bundle */',
     },
-    plugins: [nodeResolve()]
-  },
-  
-  // UMD build
-  {
-    input: 'src/index.js',
-    output: {
-      file: 'dist/tron-component.js',
-      format: 'umd',
-      name: 'TronComponent',
-      banner
-    },
-    plugins: [nodeResolve()]
-  },
-  
-  // Minified UMD build
-  {
-    input: 'src/index.js',
-    output: {
-      file: 'dist/tron-component.min.js',
-      format: 'umd',
-      name: 'TronComponent',
-      banner
-    },
+    context: 'window',
     plugins: [
-      nodeResolve(),
-      terser({
-        format: {
-          comments: /^!/
-        }
-      })
+        postcss({
+            extract: false,
+            inject: true,
+            minimize: true
+        }),
+        nodeResolve({
+            browser: true,
+            preferBuiltins: false
+        }),
+        commonjs({
+            include: ['node_modules/**'],
+            transformMixedEsModules: true
+        }),
+        terser({
+            format: {
+                comments: false
+            }
+        })
     ]
-  }
-];
+};

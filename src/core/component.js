@@ -1,248 +1,189 @@
 import { createContext } from './context.js';
 
 const registry = new Map();
-const plugins = [];
 
-function updateDOM(parent, newHTML) {
-  if (parent.innerHTML !== newHTML) {
-    parent.innerHTML = newHTML;
-  }
-}
+export function defineComponent(tagName, definition) {
+    if (registry.has(tagName)) {
+        console.warn(`Component ${tagName} already registered`);
+        return registry.get(tagName);
+    }
 
-let updateQueue = new Set();
-let isScheduled = false;
+    class ColeComponent extends HTMLElement {
+        static properties = {};
 
-function scheduleUpdate(component) {
-  updateQueue.add(component);
+        constructor() {
+            super();
 
-  if (!isScheduled) {
-    isScheduled = true;
-    requestAnimationFrame(() => {
-      const components = [...updateQueue];
-      updateQueue.clear();
-      isScheduled = false;
+            // Initialize component state
+            this._eventHandlers = new Set();
+            this._eventListeners = new Set();
+            this._eventCounter = 0;
+            this._originalContent = null;
+            this._namedSlots = {};
+            this._defaultSlotContent = '';
+            this._slotsProcessed = false;
 
-      // Process visible components first for better perceived performance
-      components.sort((a, b) => {
-        const aVisible = a._isVisible();
-        const bVisible = b._isVisible();
-        return bVisible - aVisible;
-      });
+            this._definition = definition;
 
-      components.forEach(comp => {
-        if (comp.isConnected) {
-          comp._render();
+            // Create unique instance ID
+            this._instanceId = `cc_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
         }
-      });
-    });
-  }
-}
 
-export function createComponent(tagName, definition) {
-  if (registry.has(tagName)) {
-    console.warn(`Component ${tagName} already registered`);
-    return registry.get(tagName);
-  }
-
-  class TronComponent extends HTMLElement {
-    static properties = {};
-
-    constructor() {
-      super();
-
-      // Initialize component state
-      this._reactives = new Map();
-      this._eventHandlers = new Set();
-      this._eventListeners = new Set();
-      this._eventCounter = 0;
-      this._template = null;
-      this._lastHTML = '';
-      this._firstRender = true;
-      this._updateScheduled = false;
-      this._originalContent = null;
-      this._namedSlots = {};
-      this._hasSlots = false;
-      this._defaultSlotContent = '';
-      this._processedSlotsCache = null;
-      this._slotsVersion = 0;
-      this._lastSlotContent = null;
-
-      // Create and call context
-      const context = createContext(this);
-
-      this._instanceId = `tc_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-
-      // Apply plugins
-      const enhancedContext = plugins.reduce((ctx, plugin) => plugin(ctx, this) || ctx, context);
-
-      definition.call(enhancedContext, enhancedContext);
-    }
-
-    connectedCallback() {
-      this._scheduleUpdate();
-      this.dispatchEvent(new CustomEvent('mounted'));
-    }
-
-    disconnectedCallback() {
-      this._eventListeners.forEach(({ element, type, handler }) => {
-        element.removeEventListener(type, handler);
-      });
-      this._eventListeners.clear();
-
-      this._eventHandlers.forEach(handlerName => {
-        delete this[handlerName];
-        delete window[handlerName];
-      });
-      this._eventHandlers.clear();
-
-      this._reactives.forEach((_, reactive) => {
-        if (reactive && typeof reactive.dispose === 'function') {
-          reactive.dispose();
+        connectedCallback() {
+            // Capture content immediately when element is connected, before any nested components are upgraded
+            this._captureOriginalContent();
+            
+            // Process the component definition in the next tick to allow content capture
+            Promise.resolve().then(() => {
+                const context = createContext(this);
+                definition.call(context, context);
+                this.dispatchEvent(new CustomEvent('mounted'));
+            });
         }
-      });
-      this._reactives.clear();
 
-      this.dispatchEvent(new CustomEvent('unmounted'));
-    }
+        disconnectedCallback() {
+            // Clean up event listeners
+            this._eventListeners.forEach(({ element, type, handler }) => {
+                element.removeEventListener(type, handler);
+            });
+            this._eventListeners.clear();
 
-    attributeChangedCallback(name, oldValue, newValue) {
-      if (oldValue !== newValue) {
-        if (this._propsCache) {
-          this._propsCache.delete(this._kebabToCamel(name));
+            // Clean up event handlers
+            this._eventHandlers.forEach(({ name, globalName }) => {
+                delete this[name];
+                delete window[globalName];
+            });
+            this._eventHandlers.clear();
+
+            this.dispatchEvent(new CustomEvent('unmounted'));
         }
-        this._scheduleUpdate();
-      }
-    }
 
-    _kebabToCamel(str) {
-      return str.replace(/-([a-z])/g, (_, letter) => letter.toUpperCase());
-    }
-
-    _scheduleUpdate() {
-      if (!this._updateScheduled && this.isConnected) {
-        this._updateScheduled = true;
-        scheduleUpdate(this);
-      }
-    }
-
-    _render() {
-      if (!this._template) return;
-
-      this._updateScheduled = false;
-      this.dispatchEvent(new CustomEvent('beforeUpdate'));
-
-      const html = typeof this._template === 'function'
-        ? this._template()
-        : String(this._template);
-
-      if (html === this._lastHTML && !this._firstRender) return;
-
-      const processedHTML = this._processSlots(html);
-      updateDOM(this, processedHTML);
-
-      this._lastHTML = html;
-      this._firstRender = false;
-      this.dispatchEvent(new CustomEvent('updated'));
-    }
-
-    _processSlots(html) {
-      const currentSlotContent = this.innerHTML;
-
-      if (this._firstRender && !this._originalContent) {
-        this._originalContent = currentSlotContent;
-        this._lastSlotContent = currentSlotContent;
-        this._namedSlots = this._extractNamedSlots();
-        this._hasSlots = html.includes('<slot');
-        this._defaultSlotContent = this._getDefaultSlotContent();
-        this._slotsVersion++;
-      } else if (currentSlotContent !== this._lastSlotContent) {
-        this._lastSlotContent = currentSlotContent;
-        this._namedSlots = this._extractNamedSlots();
-        this._defaultSlotContent = this._getDefaultSlotContent();
-        this._slotsVersion++;
-        this._processedSlotsCache = null;
-      }
-
-      if (!this._hasSlots) return html;
-
-      if (this._processedSlotsCache && this._processedSlotsCache.version === this._slotsVersion) {
-        return this._processedSlotsCache.result;
-      }
-
-      const result = html.replace(/<slot(\s+name=["']([^"']+)["'])?[^>]*><\/slot>/g, (match, nameAttr, slotName) => {
-        if (slotName) {
-          return this._namedSlots[slotName] || '';
-        } else {
-          return this._defaultSlotContent;
+        attributeChangedCallback(name, oldValue, newValue) {
+            if (oldValue !== newValue && this._propsCache) {
+                this._propsCache.delete(this._kebabToCamel(name));
+            }
         }
-      });
 
-      this._processedSlotsCache = {
-        version: this._slotsVersion,
-        result: result
-      };
+        render() {
+            // Clear all caches
+            if (this._propsCache) {
+                this._propsCache.clear();
+            }
+            
+            // Reset slot processing to force fresh slot extraction
+            this._slotsProcessed = false;
+            
+            // Re-capture original content (in case slot content changed)
+            this._captureOriginalContent();
+            
+            // Re-run the component definition with fresh context
+            const context = createContext(this);
+            this._definition.call(context, context);
+            
+            // Dispatch event for any cleanup/update logic
+            this.dispatchEvent(new CustomEvent('rerendered', { 
+                detail: { timestamp: Date.now() }
+            }));
+        }
 
-      return result;
+        _kebabToCamel(str) {
+            return str.replace(/-([a-z])/g, (_, letter) => letter.toUpperCase());
+        }
+
+        _captureOriginalContent() {
+            // Capture the innerHTML immediately - this should contain the original, unprocesed content
+            this._originalContent = this.innerHTML;
+            
+            // Create a map to store content by element reference
+            const elementContentMap = new Map();
+            
+            // Also capture text content of any nested custom elements to preserve their slot content
+            const nestedCustomElements = this.querySelectorAll('*');
+            nestedCustomElements.forEach(element => {
+                const tagName = element.tagName.toLowerCase();
+                if (tagName.includes('-') && !element._originalContentCaptured) {
+                    // Store the original content mapped to the specific element
+                    elementContentMap.set(element, element.innerHTML);
+                    element._preservedSlotContent = element.innerHTML;
+                    element._originalContentCaptured = true;
+                }
+            });
+            
+            // Store the map on this component instance for later use
+            this._elementContentMap = elementContentMap;
+        }
+
+        _processSlots() {
+            // Only process slots once
+            if (this._slotsProcessed) return;
+            
+            this._extractSlots();
+            this._slotsProcessed = true;
+        }
+
+        _extractSlots() {
+            if (!this._originalContent) {
+                this._namedSlots = {};
+                this._defaultSlotContent = '';
+                return;
+            }
+
+            // Create a temporary container to safely parse HTML
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = this._originalContent;
+
+            // Restore preserved content for any nested custom elements using the stored map
+            if (this._elementContentMap) {
+                const nestedElements = tempDiv.querySelectorAll('*');
+                const realNestedElements = Array.from(this.querySelectorAll('*'));
+                
+                nestedElements.forEach((element, index) => {
+                    const tagName = element.tagName.toLowerCase();
+                    if (tagName.includes('-')) {
+                        // Match by index within the same tag type to maintain correspondence
+                        const realElement = realNestedElements[index];
+                        if (realElement && this._elementContentMap.has(realElement)) {
+                            element.innerHTML = this._elementContentMap.get(realElement);
+                        }
+                    }
+                });
+            }
+
+            // Only process slots that are direct children (not nested in other custom elements)
+            const namedSlots = {};
+            
+            // Get direct child template elements with slot attribute
+            const directTemplateElements = Array.from(tempDiv.children).filter(child => 
+                child.tagName === 'TEMPLATE' && child.hasAttribute('slot')
+            );
+            
+            directTemplateElements.forEach(template => {
+                const slotName = template.getAttribute('slot');
+                namedSlots[slotName] = template.innerHTML;
+                template.remove();
+            });
+
+            // Get direct child elements with slot attribute (legacy support)
+            const directSlotElements = Array.from(tempDiv.children).filter(child => 
+                child.hasAttribute('slot') && child.tagName !== 'TEMPLATE'
+            );
+            
+            directSlotElements.forEach(el => {
+                const slotName = el.getAttribute('slot');
+                if (!namedSlots[slotName]) {
+                    namedSlots[slotName] = el.outerHTML;
+                }
+                el.remove();
+            });
+
+            this._namedSlots = namedSlots;
+            
+            // Everything remaining is default slot content
+            this._defaultSlotContent = tempDiv.innerHTML.trim();
+        }
     }
 
-    _extractNamedSlots() {
-      const namedSlots = {};
-      const currentContent = this._lastSlotContent || this._originalContent;
-
-      if (!currentContent) return namedSlots;
-
-      if (!currentContent.includes('slot=')) return namedSlots;
-
-      const tempDiv = document.createElement('div');
-      tempDiv.innerHTML = currentContent;
-
-      tempDiv.querySelectorAll('[slot]').forEach(el => {
-        const slotName = el.getAttribute('slot');
-        namedSlots[slotName] = el.outerHTML;
-      });
-
-      return namedSlots;
-    }
-
-    _getDefaultSlotContent() {
-      const currentContent = this._lastSlotContent || this._originalContent;
-      if (!currentContent) return '';
-
-      if (!currentContent.includes('slot=')) {
-        return currentContent;
-      }
-
-      const tempDiv = document.createElement('div');
-      tempDiv.innerHTML = currentContent;
-
-      tempDiv.querySelectorAll('[slot]').forEach(el => el.remove());
-
-      return tempDiv.innerHTML;
-    }
-
-    _isVisible() {
-      if (!this.isConnected) return true;
-
-      try {
-        const rect = this.getBoundingClientRect();
-        return rect.top < window.innerHeight && rect.bottom > 0;
-      } catch {
-        return true;
-      }
-    }
-
-    forceUpdate() {
-      this._scheduleUpdate();
-    }
-  }
-
-  customElements.define(tagName, TronComponent);
-  registry.set(tagName, TronComponent);
-  return TronComponent;
-}
-
-export function use(plugin) {
-  if (typeof plugin === 'function') {
-    plugins.push(plugin);
-  }
+    customElements.define(tagName, ColeComponent);
+    registry.set(tagName, ColeComponent);
+    return ColeComponent;
 }

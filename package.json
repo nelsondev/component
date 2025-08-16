@@ -1,65 +1,51 @@
 {
-  "name": "@nelsondev/component",
-  "version": "1.0.4",
-  "description": "Ultra-simple reactive web component library with clean APIs and powerful features",
-  "main": "dist/tron-component.js",
-  "module": "dist/tron-component.esm.js",
-  "types": "types/index.d.ts",
-  "files": [
-    "dist/",
-    "types/",
-    "src/",
-    "README.md",
-    "LICENSE"
-  ],
-  "scripts": {
-    "build": "rollup -c",
-    "build:watch": "rollup -c --watch"
-  },
-  "keywords": [
-    "web-components",
-    "reactive",
-    "frontend",
-    "ui-library",
-    "shadow-dom",
-    "custom-elements",
-    "lightweight",
-    "performance"
-  ],
-  "author": "Nelson M <nelson@example.com>",
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/nelsondev/component.git"
-  },
-  "bugs": {
-    "url": "https://github.com/nelsondev/component/issues"
-  },
-  "homepage": "https://github.com/nelsondev/component#readme",
-  "dependencies": {
-    "@preact/signals-core": "^1.5.0"
-  },
-  "devDependencies": {
-    "rollup": "^4.0.0",
-    "@rollup/plugin-terser": "^0.4.0",
-    "@rollup/plugin-node-resolve": "^15.0.0"
-  },
-  "engines": {
-    "node": ">=14.0.0"
-  },
-  "browserslist": [
-    "> 1%",
-    "last 2 versions",
-    "not dead",
-    "not ie 11"
-  ],
-  "exports": {
-    ".": {
-      "import": "./dist/tron-component.esm.js",
-      "require": "./dist/tron-component.js",
-      "types": "./types/index.d.ts"
-    }
-  },
-  "sideEffects": false,
-  "type": "module"
+	"name": "@nelsondev/component",
+	"version": "1.0.5",
+	"description": "Ultra-simple web component library with a clean API.",
+	"main": "dist/tron-component.js",
+	"module": "dist/tron-component.esm.js",
+	"scripts": {
+		"build": "rollup -c",
+		"build:watch": "rollup -c --watch"
+	},
+	"keywords": [
+		"web-components",
+		"reactive",
+		"frontend",
+		"ui-library",
+		"shadow-dom",
+		"custom-elements",
+		"lightweight",
+		"performance"
+	],
+	"author": "Nelson M <nelson@example.com>",
+	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/nelsondev/component.git"
+	},
+	"bugs": {
+		"url": "https://github.com/nelsondev/component/issues"
+	},
+	"homepage": "https://github.com/nelsondev/component#readme",
+	"dependencies": {
+	},
+	"devDependencies": {
+        "@rollup/plugin-commonjs": "^25.0.0",
+        "@rollup/plugin-node-resolve": "^15.0.0",
+        "@rollup/plugin-terser": "^0.4.0",
+        "rollup": "^4.0.0",
+        "rollup-plugin-postcss": "^4.0.2"
+    },
+	"engines": {
+		"node": ">=14.0.0"
+	},
+	"browserslist": [
+		"> 1%",
+		"last 2 versions",
+		"not dead",
+		"not ie 11"
+	],
+	"sideEffects": false,
+	"type": "module"
 }
