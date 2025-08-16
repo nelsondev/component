@@ -103,54 +103,7 @@
              * Define component properties with cleaner API
              */
             defineProps(propList = []) {
-                // Check if we have a pending variant prop from defineMixes
-                if (component._pendingVariantDefault && !propList.some(prop => 
-                    (typeof prop === 'string' ? prop : prop.name) === 'variant'
-                )) {
-                    // Add the variant prop automatically
-                    propList = [...propList, { 
-                        name: 'variant', 
-                        type: String, 
-                        default: component._pendingVariantDefault 
-                    }];
-                }
-                
                 return createProps(component, propList);
-            },
-
-            /**
-             * Define variant mixes - automatically creates a 'variant' prop and returns classes
-             */
-            defineMixes(mixList) {
-                // Create a map for quick lookup
-                const mixMap = {};
-                mixList.forEach(mix => {
-                    mixMap[mix.name] = mix.classes;
-                });
-
-                // Get the default variant (first one or one named 'default')
-                const defaultVariant = mixList.find(mix => mix.name === 'default')?.name || mixList[0]?.name || 'default';
-
-                // Store the default for when defineProps is called
-                if (!component._variantPropCreated) {
-                    component._pendingVariantDefault = defaultVariant;
-                    component._variantPropCreated = true;
-                }
-
-                // Return an object that resolves to the appropriate classes
-                const mixesProxy = {
-                    toString() {
-                        const variant = (component._props && component._props.variant) || defaultVariant;
-                        return mixMap[variant] || mixMap[defaultVariant] || '';
-                    },
-
-                    // Allow direct access to specific variants
-                    get(variantName) {
-                        return mixMap[variantName] || '';
-                    }
-                };
-
-                return mixesProxy;
             },
 
             /**
