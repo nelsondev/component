@@ -73,14 +73,14 @@ Expose method on component instance.
 - `handler` (function) - Handler function
 
 ---
-#### `onMounted(callback)`
+### `onMounted(callback)`
 Register mounted lifecycle hook.
 
 **Parameters:**
 - `callback` (function) - Callback function
 
 ---
-#### `onUnmounted(callback)`
+### `onUnmounted(callback)`
 Register mounted lifecycle hook.
 
 **Parameters:**
@@ -96,20 +96,20 @@ Set component HTML template.
 ## Examples
 
 ### Counter Component
+Reactivity isn't the goal of this library, just clean, light DOM reusable components.
 
 ```javascript
-defineComponent('my-counter', ({ defineProps, defineTemplate, defineEvent }) => {
-  const props = defineProps([
-    { name: 'value', type: Number, default: 0 }
-  ]);
+defineComponent('my-counter', ({ element, defineTemplate, defineEvent }) => {
+  let count = 0
   
   const increment = defineEvent(() => {
-    props.value = props.value + 1;
+    count++
+    element.querySelector('div span').innerHTML = `Count: ${count}`
   });
   
   defineTemplate(`
     <div>
-      <span>Count: ${props.value}</span>
+      <span>Count: ${count}</span>
       <button onclick="${increment}">+</button>
     </div>
   `);
