@@ -91,23 +91,37 @@ export function defineComponent(tagName, definition) {
             // Capture the innerHTML immediately - this should contain the original, unprocesed content
             this._originalContent = this.innerHTML;
             
-            // Create a map to store content by element reference
+            // Create a more robust mapping system using element paths instead of indices
             const elementContentMap = new Map();
             
-            // Also capture text content of any nested custom elements to preserve their slot content
+            // Capture content of nested custom elements with their unique identifiers
             const nestedCustomElements = this.querySelectorAll('*');
             nestedCustomElements.forEach(element => {
                 const tagName = element.tagName.toLowerCase();
                 if (tagName.includes('-') && !element._originalContentCaptured) {
-                    // Store the original content mapped to the specific element
-                    elementContentMap.set(element, element.innerHTML);
+                    // Create a unique key based on tag name, position, and content signature
+                    const elementKey = this._createElementKey(element);
+                    elementContentMap.set(elementKey, element.innerHTML);
                     element._preservedSlotContent = element.innerHTML;
                     element._originalContentCaptured = true;
+                    element._elementKey = elementKey; // Store key on element for later matching
                 }
             });
             
             // Store the map on this component instance for later use
             this._elementContentMap = elementContentMap;
+        }
+
+        _createElementKey(element) {
+            const tagName = element.tagName.toLowerCase();
+            const parent = element.parentElement;
+            const siblings = Array.from(parent.children).filter(child => 
+                child.tagName.toLowerCase() === tagName
+            );
+            const indexInSiblings = siblings.indexOf(element);
+            const contentSignature = element.innerHTML.slice(0, 50); // First 50 chars as signature
+            
+            return `${tagName}:${indexInSiblings}:${contentSignature.length}:${contentSignature.replace(/\s+/g, '')}`;
         }
 
         _processSlots() {
@@ -129,24 +143,23 @@ export function defineComponent(tagName, definition) {
             const tempDiv = document.createElement('div');
             tempDiv.innerHTML = this._originalContent;
 
-            // Restore preserved content for any nested custom elements using the stored map
+            // Restore preserved content for nested custom elements using robust key matching
             if (this._elementContentMap) {
                 const nestedElements = tempDiv.querySelectorAll('*');
-                const realNestedElements = Array.from(this.querySelectorAll('*'));
                 
-                nestedElements.forEach((element, index) => {
+                nestedElements.forEach(element => {
                     const tagName = element.tagName.toLowerCase();
                     if (tagName.includes('-')) {
-                        // Match by index within the same tag type to maintain correspondence
-                        const realElement = realNestedElements[index];
-                        if (realElement && this._elementContentMap.has(realElement)) {
-                            element.innerHTML = this._elementContentMap.get(realElement);
+                        // Create the same key for this temp element
+                        const elementKey = this._createTempElementKey(element, tempDiv);
+                        
+                        if (this._elementContentMap.has(elementKey)) {
+                            element.innerHTML = this._elementContentMap.get(elementKey);
                         }
                     }
                 });
             }
 
-            // Only process slots that are direct children (not nested in other custom elements)
             const namedSlots = {};
             
             // Get direct child template elements with slot attribute
@@ -160,23 +173,22 @@ export function defineComponent(tagName, definition) {
                 template.remove();
             });
 
-            // Get direct child elements with slot attribute (legacy support)
-            const directSlotElements = Array.from(tempDiv.children).filter(child => 
-                child.hasAttribute('slot') && child.tagName !== 'TEMPLATE'
-            );
-            
-            directSlotElements.forEach(el => {
-                const slotName = el.getAttribute('slot');
-                if (!namedSlots[slotName]) {
-                    namedSlots[slotName] = el.outerHTML;
-                }
-                el.remove();
-            });
-
             this._namedSlots = namedSlots;
             
             // Everything remaining is default slot content
             this._defaultSlotContent = tempDiv.innerHTML.trim();
+        }
+
+        _createTempElementKey(element, tempContainer) {
+            const tagName = element.tagName.toLowerCase();
+            const parent = element.parentElement || tempContainer;
+            const siblings = Array.from(parent.children).filter(child => 
+                child.tagName.toLowerCase() === tagName
+            );
+            const indexInSiblings = siblings.indexOf(element);
+            const contentSignature = element.innerHTML.slice(0, 50);
+            
+            return `${tagName}:${indexInSiblings}:${contentSignature.length}:${contentSignature.replace(/\s+/g, '')}`;
         }
     }
 
