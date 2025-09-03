@@ -17,4 +17,4 @@ if (typeof window !== 'undefined') {
     window.ready = ready;
 }
 
-export { defineComponent, html, template }
+export { defineComponent, html, template, ready }
