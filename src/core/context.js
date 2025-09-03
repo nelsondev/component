@@ -171,7 +171,10 @@ export function createContext(component) {
          * Lifecycle hooks
          */
         onMounted(callback) {
-            component.addEventListener('mounted', callback, { once: true });
+            component.addEventListener('mounted', () => {
+                callback()
+                component.dispatchEvent(new CustomEvent('ready'))
+            }, { once: true });
         },
 
         onUnmounted(callback) {

@@ -197,7 +197,10 @@ function createContext(component) {
          * Lifecycle hooks
          */
         onMounted(callback) {
-            component.addEventListener('mounted', callback, { once: true });
+            component.addEventListener('mounted', () => {
+                callback();
+                component.dispatchEvent(new CustomEvent('ready'));
+            }, { once: true });
         },
 
         onUnmounted(callback) {
@@ -207,12 +210,6 @@ function createContext(component) {
 }
 
 const registry = new Map();
-const pending = new Set();
-const callbacks = [];
-
-function ready(callback) {
-    callbacks.push(callback);
-}
 
 function defineComponent(tagName, definition) {
     if (registry.has(tagName)) {
@@ -239,8 +236,6 @@ function defineComponent(tagName, definition) {
 
             // Create unique instance ID
             this._instanceId = `cc_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-
-            pending.add(this);
         }
 
         connectedCallback() {
@@ -252,11 +247,6 @@ function defineComponent(tagName, definition) {
                 const context = createContext(this);
                 definition.call(context, context);
                 this.dispatchEvent(new CustomEvent('mounted'));
-                pending.delete(this);
-                if (pending.size === 0) {
-                    callbacks.forEach(x => x());
-                    callbacks = [];
-                }
             });
         }
 
@@ -430,8 +420,7 @@ if (typeof window !== 'undefined') {
     window.TronComponent = { defineComponent };
     window.html = html;
     window.template = template;
-    window.isReady = ready;
 }
 
-export { defineComponent, html, ready, template };
+export { defineComponent, html, template };
 //# sourceMappingURL=tron-component.esm.js.map

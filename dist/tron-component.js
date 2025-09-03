@@ -203,7 +203,10 @@
              * Lifecycle hooks
              */
             onMounted(callback) {
-                component.addEventListener('mounted', callback, { once: true });
+                component.addEventListener('mounted', () => {
+                    callback();
+                    component.dispatchEvent(new CustomEvent('ready'));
+                }, { once: true });
             },
 
             onUnmounted(callback) {
@@ -213,12 +216,6 @@
     }
 
     const registry = new Map();
-    const pending = new Set();
-    const callbacks = [];
-
-    function ready(callback) {
-        callbacks.push(callback);
-    }
 
     function defineComponent(tagName, definition) {
         if (registry.has(tagName)) {
@@ -245,8 +242,6 @@
 
                 // Create unique instance ID
                 this._instanceId = `cc_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-
-                pending.add(this);
             }
 
             connectedCallback() {
@@ -258,11 +253,6 @@
                     const context = createContext(this);
                     definition.call(context, context);
                     this.dispatchEvent(new CustomEvent('mounted'));
-                    pending.delete(this);
-                    if (pending.size === 0) {
-                        callbacks.forEach(x => x());
-                        callbacks = [];
-                    }
                 });
             }
 
@@ -436,12 +426,10 @@
         window.TronComponent = { defineComponent };
         window.html = html;
         window.template = template;
-        window.isReady = ready;
     }
 
     exports.defineComponent = defineComponent;
     exports.html = html;
-    exports.ready = ready;
     exports.template = template;
 
 }));

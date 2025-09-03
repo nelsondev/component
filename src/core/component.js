@@ -2,12 +2,6 @@ import { createContext } from './context.js';
 import { kebabToCamel } from '../utils/utils.js';
 
 const registry = new Map();
-const pending = new Set();
-const callbacks = [];
-
-export function ready(callback) {
-    callbacks.push(callback)
-}
 
 export function defineComponent(tagName, definition) {
     if (registry.has(tagName)) {
@@ -34,8 +28,6 @@ export function defineComponent(tagName, definition) {
 
             // Create unique instance ID
             this._instanceId = `cc_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-
-            pending.add(this)
         }
 
         connectedCallback() {
@@ -47,11 +39,6 @@ export function defineComponent(tagName, definition) {
                 const context = createContext(this);
                 definition.call(context, context);
                 this.dispatchEvent(new CustomEvent('mounted'));
-                pending.delete(this)
-                if (pending.size === 0) {
-                    callbacks.forEach(x => x())
-                    callbacks = []
-                }
             });
         }
 
