@@ -3,7 +3,7 @@
  * @author Nelson M
  */
 
-import { defineComponent } from './core/component.js'
+import { defineComponent, ready } from './core/component.js'
 
 const html = String.raw;
 const template = html;
@@ -14,6 +14,7 @@ if (typeof window !== 'undefined') {
     window.TronComponent = { defineComponent };
     window.html = html;
     window.template = template;
+    window.ready = ready;
 }
 
 export { defineComponent, html, template }

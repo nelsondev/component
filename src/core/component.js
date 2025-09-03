@@ -2,6 +2,18 @@ import { createContext } from './context.js';
 import { kebabToCamel } from '../utils/utils.js';
 
 const registry = new Map();
+const registered = new Set();
+const callbacks = new Array();
+
+export function isReady() {
+    for (const component of registered) if (!component._isReady) return;
+    readyCallbacks.forEach(cb => cb());
+    readyCallbacks = [];
+}
+
+export function ready(callback) {
+    callbacks.push(callback)
+}
 
 export function defineComponent(tagName, definition) {
     if (registry.has(tagName)) {
@@ -23,11 +35,14 @@ export function defineComponent(tagName, definition) {
             this._namedSlots = {};
             this._defaultSlotContent = '';
             this._slotsProcessed = false;
+            this._isReady = false;
 
             this._definition = definition;
 
             // Create unique instance ID
             this._instanceId = `cc_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+
+            registered.add(this);
         }
 
         connectedCallback() {
@@ -39,6 +54,8 @@ export function defineComponent(tagName, definition) {
                 const context = createContext(this);
                 definition.call(context, context);
                 this.dispatchEvent(new CustomEvent('mounted'));
+                this._isReady = true
+                isReady()
             });
         }
 
