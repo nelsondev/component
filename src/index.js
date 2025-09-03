@@ -14,7 +14,7 @@ if (typeof window !== 'undefined') {
     window.TronComponent = { defineComponent };
     window.html = html;
     window.template = template;
-    window.ready = ready;
+    window.isReady = ready;
 }
 
 export { defineComponent, html, template, ready }

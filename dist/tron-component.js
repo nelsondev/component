@@ -213,14 +213,8 @@
     }
 
     const registry = new Map();
-    const registered = new Set();
-    const callbacks = new Array();
-
-    function isReady() {
-        for (const component of registered) if (!component._isReady) return;
-        readyCallbacks.forEach(cb => cb());
-        readyCallbacks = [];
-    }
+    const pending = new Set();
+    const callbacks = [];
 
     function ready(callback) {
         callbacks.push(callback);
@@ -246,14 +240,13 @@
                 this._namedSlots = {};
                 this._defaultSlotContent = '';
                 this._slotsProcessed = false;
-                this._isReady = false;
 
                 this._definition = definition;
 
                 // Create unique instance ID
                 this._instanceId = `cc_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 
-                registered.add(this);
+                pending.add(this);
             }
 
             connectedCallback() {
@@ -265,8 +258,11 @@
                     const context = createContext(this);
                     definition.call(context, context);
                     this.dispatchEvent(new CustomEvent('mounted'));
-                    this._isReady = true;
-                    isReady();
+                    pending.delete(this);
+                    if (pending.size === 0) {
+                        callbacks.forEach(x => x());
+                        callbacks = [];
+                    }
                 });
             }
 
@@ -440,7 +436,7 @@
         window.TronComponent = { defineComponent };
         window.html = html;
         window.template = template;
-        window.ready = ready;
+        window.isReady = ready;
     }
 
     exports.defineComponent = defineComponent;
